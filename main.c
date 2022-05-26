@@ -2,69 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "veiculo.h"
-#include "utils.h"
+#include "auxiliar.h"
+#include "cabecalho.h"
 
 int filtrar_veiculo1(FILE *stream, veiculo f);
 int filtrar_veiculo2(FILE *stream, veiculo f);
-
-typedef struct cabecalho{
-  char status, codC5, codC6, codC7;
-  int topo1, proxRRN, nroRegRem;
-  long topo2, proxByteOffset;
-  char descricao[40], desC1[22], desC2[19], desC3[24], desC4[8], desC5[16], desC6[18], desC7[19];
-  
-} cabecalho;
-
-void escrever_cabecalho(cabecalho c, FILE *stream, char tipo){
-  fwrite(&c.status, 1, 1, stream);
-  fwrite(c.descricao, 1, 40, stream);
-
-  if (tipo == '1') fwrite(&c.topo1, 4, 1, stream);
-  else fwrite(&c.topo2, 8, 1, stream);
-
-  fwrite(c.desC1, 1, 22, stream);
-  fwrite(c.desC2, 1, 19, stream);
-  fwrite(c.desC3, 1, 24, stream);
-  fwrite(c.desC4, 1, 8, stream);
-  fwrite(&c.codC5, 1, 1, stream);
-  fwrite(c.desC5, 1, 16, stream);
-  fwrite(&c.codC6, 1, 1, stream);
-  fwrite(c.desC6, 1, 18, stream);
-  fwrite(&c.codC7, 1, 1, stream);
-  fwrite(c.desC7, 1, 19, stream);
-
-  if (tipo == '1') fwrite(&c.proxRRN, 4, 1, stream);
-  else fwrite(&c.proxByteOffset, 8, 1, stream);
-  fwrite(&c.nroRegRem, 4, 1, stream);
-}
-
-cabecalho ler_cabecalho(FILE *stream, char tipo){
-  // pq eu faria qualquer uma dessas coisas
-  cabecalho c;
-  fread(&c.status, 1, 1, stream);
-  fread(&c.descricao, 1, 40, stream);
-
-  if (tipo == '1') fread(&c.topo1, 4, 1, stream);
-  else fread(&c.topo2, 8, 1, stream);
-    
-  fread(c.desC1, 1, 22, stream);
-  fread(c.desC2, 1, 19, stream);
-  fread(c.desC3, 1, 24, stream);
-  fread(c.desC4, 1, 8, stream);
-  fread(&c.codC5, 1, 1, stream);
-  fread(c.desC5, 1, 16, stream);
-  fread(&c.codC6, 1, 1, stream);
-  fread(c.desC6, 1, 18, stream);
-  fread(&c.codC7, 1, 1, stream);
-  fread(c.desC7, 1, 19, stream);
-
-  if (tipo == '1') fread(&c.proxRRN, 4, 1, stream);
-  else fread(&c.proxByteOffset, 8, 1, stream);
-
-  fread(&c.nroRegRem, 4, 1, stream);
-
-  return c;
-}
 
 int main(void) {
     int cmd;
@@ -144,10 +86,12 @@ int main(void) {
                   
                     rc.proxByteOffset += 1 + 4 + tamRegistro;
                 }
-                // atualizar status
-                // reescrever cabecalho
+                fseek(bin, 178, SEEK_SET);
+                fwrite(&rc.proxByteOffset, 8, 1, bin);
             }
-            // escrever status??
+            rc.status = '1';
+            fseek(bin, 0, SEEK_SET);
+            fwrite(&rc.status, 1, 1, bin);
           
             fclose(csv);
             fclose(bin);
@@ -169,10 +113,13 @@ int main(void) {
             break;
           }
 
+          int qtd = 0;
           if (strcmp(tipo, "tipo1") == 0){
-            fseek(bin, 182, SEEK_SET); // talvez ler cabecalho etc
-            // checar se status e 0
-
+            cabecalho rc = ler_cabecalho(bin, '1');
+            if (rc.status == '0'){
+              printf("Falha no processamento do arquivo.\n");
+              break;
+            }
             // leitura e exibicao dos registros
             char removido;
             while (fread(&removido, 1, 1, bin), !feof(bin)){
@@ -181,13 +128,18 @@ int main(void) {
                 continue;
               }  
               fseek(bin, 4, SEEK_CUR);
+              qtd++;
               veiculo v = ler_veiculo(bin, 97-1-4);
               mostrar_veiculo(v);
               desalocar_veiculo(v);
             } 
           }
           else if (strcmp(tipo, "tipo2") == 0){
-            fseek(bin, 190, SEEK_SET); // talvez ler cabecalho etc
+            cabecalho rc = ler_cabecalho(bin, '2');
+            if (rc.status == '0'){
+              printf("Falha no processamento do arquivo.\n");
+              break;
+            }
 
             // leitura e exibicao dos registros
             char removido;
@@ -199,11 +151,14 @@ int main(void) {
                 continue;
               }
               fseek(bin, 8, SEEK_CUR);
+              qtd++;
               veiculo v = ler_veiculo(bin, tamRegistro-8);
               mostrar_veiculo(v);
               desalocar_veiculo(v);
-            } 
+            }
           }
+          if (qtd == 0) printf("Registro inexistente.\n");
+          
           free(tipo);
           free(binname);
           fclose(bin);
@@ -257,14 +212,16 @@ int main(void) {
               printf("Falha no processamento do arquivo.\n");
               break;
             }
-          // checar se status e 0
-
-
           
             free(binname);
             if (strcmp(tipo, "tipo1") == 0){
+              cabecalho rc = ler_cabecalho(bin, '1');
+              if (rc.status == '0'){
+                printf("Falha no processamento do arquivo.\n");
+                break;
+              }
+              
                 char c;
-                fseek(bin, 182, SEEK_SET); 
                 while ((c = fgetc(bin)) != EOF){
                     ungetc(c, bin);
                     int next = 97 - filtrar_veiculo1(bin, f);
@@ -272,8 +229,12 @@ int main(void) {
                 } 
             }
             else if (strcmp(tipo, "tipo2") == 0){
+              cabecalho rc = ler_cabecalho(bin, '2');
+              if (rc.status == '0'){
+                printf("Falha no processamento do arquivo.\n");
+                break;
+              }
                 char c;
-                fseek(bin, 190, SEEK_SET);
                 while ((c = fgetc(bin)) != EOF){
                     ungetc(c, bin);
                     int next = filtrar_veiculo2(bin, f);
@@ -296,10 +257,13 @@ int main(void) {
             printf("Falha no processamento do arquivo.\n");
             break;
           }
-          
-          // talvez ler cabecalho? ainda n sei como isso funciona
-          // checar se status e 0
-          fseek(bin, 182 + RRN * 97, SEEK_SET);
+
+          cabecalho rc = ler_cabecalho(bin, '1');
+          if (rc.status == '0'){
+            printf("Falha no processamento do arquivo.\n");
+            break;
+          }
+          fseek(bin, RRN * 97, SEEK_CUR);
 
           // leitura e exibicao do registro
           char removido;
