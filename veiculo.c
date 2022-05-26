@@ -198,6 +198,9 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
         lido += 4;
         lido += fread(&codigo, 1, 1, stream);
     }
+    else{
+        if(f.cidade) return tamRegistro - lido;
+    }
     if(codigo == '1'){
         lido += fread(v->marca, 1, tam, stream);
         v->marca[tam] = '\0';
@@ -208,10 +211,16 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
         lido += 4;
         lido += fread(&codigo, 1, 1, stream);
     }
+    else{
+        if(f.marca) return tamRegistro - lido;
+    }
     if(codigo == '2'){
         lido += fread(v->modelo, 1, tam, stream);
         v->modelo[tam] = '\0';
         if(f.modelo && strcmp(v->modelo, f.modelo)) return tamRegistro - lido;
+    }
+    else{
+        if(f.modelo) return tamRegistro - lido;
     }
     printf(
         "MARCA DO VEICULO: %s\n"
