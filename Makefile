@@ -12,3 +12,6 @@ all: ${BINS}
 %.o: %.c
 	@echo "Creating object.."
 	${CC} -c $<
+
+run: main
+	./main
