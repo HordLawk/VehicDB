@@ -3,8 +3,7 @@
 /* struct com os dados de um cabecalho,
 topo1 e proxRRn sao utilizados apenas com arquivos tipo1
 topo2 e proxByteOffset sao utilizados apenas com arquivos tipo2 */
-typedef struct cabecalho
-{
+typedef struct cabecalho{
     char status, codC5, codC6, codC7;
     int topo1, proxRRN, nroRegRem;
     long topo2, proxByteOffset;

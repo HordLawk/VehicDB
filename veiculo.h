@@ -1,8 +1,7 @@
 #include <stdio.h>
 
 /* struct com os dados de um veiculo */
-typedef struct Veiculo
-{
+typedef struct Veiculo{
     int id;
     int ano;
     int qtt;

@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include "cabecalho.h"
 
-void escrever_cabecalho(cabecalho c, FILE *stream, char tipo)
-{
+void escrever_cabecalho(cabecalho c, FILE *stream, char tipo){
     fwrite(&c.status, 1, 1, stream);
     fwrite(c.descricao, 1, 40, stream);
 
@@ -30,8 +29,7 @@ void escrever_cabecalho(cabecalho c, FILE *stream, char tipo)
     fwrite(&c.nroRegRem, 4, 1, stream);
 }
 
-cabecalho ler_cabecalho(FILE *stream, char tipo)
-{
+cabecalho ler_cabecalho(FILE *stream, char tipo){
     cabecalho c;
     fread(&c.status, 1, 1, stream);
 

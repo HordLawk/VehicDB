@@ -5,12 +5,10 @@
 #include "utils.h"
 #include "cabecalho.h"
 
-int main(void)
-{
+int main(void){
     int cmd;
     scanf("%d ", &cmd);
-    switch (cmd)
-    {
+    switch (cmd){
         /* funcionalidade 1:
         leitura de varios registros em arquivo csv e escrita em arquivo binario */
         case 1: {
@@ -192,8 +190,7 @@ int main(void)
 
         /* Funcionalidade 3:
         recuperacao de todos os registros que satisfazem criterios de busca */
-        case 3:
-        {
+        case 3:{
             // leitura do comando
             char *tipo, *binname;
             int nCampos;

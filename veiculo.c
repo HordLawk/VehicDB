@@ -119,17 +119,26 @@ void desalocar_veiculo(veiculo v){
 
 veiculo ler_veiculo_csv(FILE *stream){
     veiculo v;
-    char *id, *ano, *qtt, *sigla;
-    fscanf(stream, "%m[^,]%*c", &id);
+    char *id;
+    fscanf(stream, "%m[^,]", &id);
+    fgetc(stream);
     v.id = atoi(id);
-    fscanf(stream, "%m[^,]%*c", &ano);
+    char *ano;
+    fscanf(stream, "%m[^,]", &ano);
+    fgetc(stream);
     v.ano = ano ? atoi(ano) : -1;
-    fscanf(stream, "%m[^,]%*c", &v.cidade);
-    fscanf(stream, "%m[^,]%*c", &qtt);
+    fscanf(stream, "%m[^,]", &v.cidade);
+    fgetc(stream);
+    char *qtt;
+    fscanf(stream, "%m[^,]", &qtt);
+    fgetc(stream);
     v.qtt = qtt ? atoi(qtt) : -1;
-    fscanf(stream, "%m[^,]%*c", &sigla);
+    char *sigla;
+    fscanf(stream, "%m[^,]", &sigla);
+    fgetc(stream);
     strncpy(v.sigla, sigla ? sigla : "$$", 2);
-    fscanf(stream, "%m[^,]%*c", &v.marca);
+    fscanf(stream, "%m[^,]", &v.marca);
+    fgetc(stream);
     fscanf(stream, "%m[^\r\n]", &v.modelo);
     linebreak(stream);
     
@@ -141,6 +150,7 @@ veiculo ler_veiculo_csv(FILE *stream){
 }
 
 int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
+    // campos de tamanho fixo
     char removido;
     int lido = fread(&removido, 1, 1, stream);
     int tamRegistro = 97;
@@ -168,6 +178,8 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     if((f.qtt != -1) && (v->qtt != f.qtt)) return tamRegistro - lido;
     lido += fread(v->sigla, 1, 2, stream);
     if(strncmp(f.sigla, "$$", 2) && strncmp(v->sigla, f.sigla, 2)) return tamRegistro - lido;
+
+    // campos de tamanho variavel
     v->cidade = NULL;
     v->marca = NULL;
     v->modelo = NULL;
@@ -216,6 +228,7 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     else{
         if(f.modelo) return tamRegistro - lido;
     }
+    
     mostrar_veiculo(*v);
     return tamRegistro - lido;
 }
