@@ -11,21 +11,20 @@ int main(void)
     scanf("%d ", &cmd);
     switch (cmd)
     {
-        case 1:
-        {
+        /* funcionalidade 1:
+        leitura de varios registros em arquivo csv e escrita em arquivo binario */
+        case 1: {
+            // leitura do comando e abertura dos arquivos
             char *tipo, *csvname, *binname;
             scanf("%ms %ms %ms", &tipo, &csvname, &binname);
-
             FILE *csv = fopen(csvname, "r");
             FILE *bin = fopen(binname, "wb");
-
-            // Se o arquivo CSV nao existir no diretorio atual
-            if (csv == NULL)
-            {
+            if (csv == NULL){
                 printf("Falha no processamento do arquivo.\n");
                 break;
             }
 
+            // registro de cabecalho inicial
             cabecalho rc = {'0', '0', '1', '2',
                             -1, 0, 0,
                             -1, 190,
@@ -38,15 +37,13 @@ int main(void)
                             "MARCA DO VEICULO: ",
                             "MODELO DO VEICULO: "};
 
-            // Se o tipo selecionado for "tipo1"
-            if (strcmp(tipo, "tipo1") == 0)
-            {
+            // se tipo selecionado for "tipo1"
+            if (strcmp(tipo, "tipo1") == 0){
                 escrever_cabecalho(rc, bin, '1');
                 linebreak(csv);
 
                 char c;
-                while ((c = fgetc(csv)) != EOF)
-                {
+                while ((c = fgetc(csv)) != EOF){
                     ungetc(c, csv);
                     veiculo v = ler_veiculo_csv(csv);
 
@@ -60,26 +57,25 @@ int main(void)
                     // preencher resto do registro com lixo
                     int tamRegistro = 1 + 4 + calcular_tamanho(v);
                     char lixo = '$';
-                    while (tamRegistro < 97)
-                    {
+                    while (tamRegistro < 97){
                         fwrite(&lixo, 1, 1, bin);
                         tamRegistro++;
                     }
+
                     rc.proxRRN += 1;
                     desalocar_veiculo(v);
                 }
-
+                // atualizacao do cabecalho no arquivo binario
                 fseek(bin, 174, SEEK_SET);
                 fwrite(&rc.proxRRN, 4, 1, bin);
             }
-            else if (strcmp(tipo, "tipo2") == 0)
-            {
+            // se tipo selecionado for "tipo2"
+            else if (strcmp(tipo, "tipo2") == 0){
                 escrever_cabecalho(rc, bin, '2');
                 linebreak(csv);
 
                 char c;
-                while ((c = fgetc(csv)) != EOF)
-                {
+                while ((c = fgetc(csv)) != EOF){
                     ungetc(c, csv);
                     veiculo v = ler_veiculo_csv(csv);
 
@@ -95,9 +91,11 @@ int main(void)
 
                     rc.proxByteOffset += 1 + 4 + tamRegistro;
                 }
+                // atualizacao do cabecalho no arquivo binario
                 fseek(bin, 178, SEEK_SET);
                 fwrite(&rc.proxByteOffset, 8, 1, bin);
             }
+            // atualizacao do cabecalho no arquivo binario
             rc.status = '1';
             fseek(bin, 0, SEEK_SET);
             fwrite(&rc.status, 1, 1, bin);
@@ -112,14 +110,14 @@ int main(void)
         }
         break;
 
-        case 2:
-        {
+        /* funcionalidade 2:
+        recuperacao e exibicao de todos os registros armazenados em um arquivo */
+        case 2: {
             // leitura do comando e abertura do arquivo
             char *tipo, *binname;
             scanf("%ms %ms", &tipo, &binname);
             FILE *bin = fopen(binname, "rb");
-            if (bin == NULL)
-            {
+            if (bin == NULL){
                 printf("Falha no processamento do arquivo.\n");
                 free(tipo);
                 free(binname);
@@ -128,38 +126,10 @@ int main(void)
             }
 
             int qtd = 0;
-            if (strcmp(tipo, "tipo1") == 0)
-            {
+            // se tipo selecionado for "tipo1"
+            if (strcmp(tipo, "tipo1") == 0){
                 cabecalho rc = ler_cabecalho(bin, '1');
-                if (rc.status == '0')
-                {
-                    printf("Falha no processamento do arquivo.\n");
-                    free(tipo);
-                    free(binname);
-                    fclose(bin);
-                    break;
-                }
-                // leitura e exibicao dos registros
-                char removido;
-                while (fread(&removido, 1, 1, bin), !feof(bin))
-                {
-                    if (removido == '1')
-                    {
-                        fseek(bin, 96, SEEK_CUR);
-                        continue;
-                    }
-                    fseek(bin, 4, SEEK_CUR);
-                    qtd++;
-                    veiculo v = ler_veiculo(bin, 97 - 1 - 4);
-                    mostrar_veiculo(v);
-                    desalocar_veiculo(v);
-                }
-            }
-            else if (strcmp(tipo, "tipo2") == 0)
-            {
-                cabecalho rc = ler_cabecalho(bin, '2');
-                if (rc.status == '0')
-                {
+                if (rc.status == '0'){
                     printf("Falha no processamento do arquivo.\n");
                     free(tipo);
                     free(binname);
@@ -169,24 +139,50 @@ int main(void)
 
                 // leitura e exibicao dos registros
                 char removido;
-                while (fread(&removido, 1, 1, bin), !feof(bin))
-                {
+                while (fread(&removido, 1, 1, bin), !feof(bin)){
+                    // verificar se registro foi removido
+                    if (removido == '1'){
+                        fseek(bin, 96, SEEK_CUR);
+                        continue;
+                    }
+
+                    qtd++;
+                    fseek(bin, 4, SEEK_CUR);
+                    veiculo v = ler_veiculo(bin, 97 - 1 - 4);
+                    mostrar_veiculo(v);
+                    desalocar_veiculo(v);
+                }
+            }
+            // se tipo selecionado for "tipo2"
+            else if (strcmp(tipo, "tipo2") == 0){
+                cabecalho rc = ler_cabecalho(bin, '2');
+                if (rc.status == '0'){
+                    printf("Falha no processamento do arquivo.\n");
+                    free(tipo);
+                    free(binname);
+                    fclose(bin);
+                    break;
+                }
+
+                // leitura e exibicao dos registros
+                char removido;
+                while (fread(&removido, 1, 1, bin), !feof(bin)){
+                    // verificar se registro foi removido
                     int tamRegistro;
                     fread(&tamRegistro, 4, 1, bin);
-                    if (removido == '1')
-                    {
+                    if (removido == '1'){
                         fseek(bin, tamRegistro, SEEK_CUR);
                         continue;
                     }
-                    fseek(bin, 8, SEEK_CUR);
+
                     qtd++;
+                    fseek(bin, 8, SEEK_CUR);
                     veiculo v = ler_veiculo(bin, tamRegistro - 8);
                     mostrar_veiculo(v);
                     desalocar_veiculo(v);
                 }
             }
-            if (qtd == 0)
-                printf("Registro inexistente.\n");
+            if (qtd == 0) printf("Registro inexistente.\n");
 
             free(tipo);
             free(binname);
@@ -194,8 +190,11 @@ int main(void)
         }
         break;
 
+        /* Funcionalidade 3:
+        recuperacao de todos os registros que satisfazem criterios de busca */
         case 3:
         {
+            // leitura do comando
             char *tipo, *binname;
             int nCampos;
             scanf("%ms %ms %d", &tipo, &binname, &nCampos);
@@ -205,49 +204,44 @@ int main(void)
                 free(tipo);
                 break;
             }
+
+            // leitura dos criterios de busca
             veiculo f = {-1, -1, -1, "$$", NULL, NULL, NULL};
-            while (nCampos--)
-            {
+            while (nCampos--){
                 char *campo;
                 scanf("%ms", &campo);
-                if (!strcmp(campo, "id"))
-                {
+                if (!strcmp(campo, "id")){
                     scanf("%d", &f.id);
                     linebreak(stdin);
                 }
-                else if (!strcmp(campo, "ano"))
-                {
+                else if (!strcmp(campo, "ano")){
                     scanf("%d", &f.ano);
                     linebreak(stdin);
                 }
-                else if (!strcmp(campo, "quantidade"))
-                {
+                else if (!strcmp(campo, "quantidade")){
                     scanf("%d", &f.qtt);
                     linebreak(stdin);
                 }
-                else if (!strcmp(campo, "sigla"))
-                {
+                else if (!strcmp(campo, "sigla")){
                     fgets(f.sigla, 2, stdin);
                     linebreak(stdin);
                 }
-                else if (!strcmp(campo, "cidade"))
-                {
+                else if (!strcmp(campo, "cidade")){
                     f.cidade = scan_quote_string();
                 }
-                else if (!strcmp(campo, "marca"))
-                {
+                else if (!strcmp(campo, "marca")){
                     f.marca = scan_quote_string();
                 }
-                else if (!strcmp(campo, "modelo"))
-                {
+                else if (!strcmp(campo, "modelo")){
                     f.modelo = scan_quote_string();
                 }
                 free(campo);
             }
+
+            // abertura do arquivo
             FILE *bin = fopen(binname, "rb");
             free(binname);
-            if (bin == NULL)
-            {
+            if (bin == NULL){
                 printf("Falha no processamento do arquivo.\n");
                 desalocar_veiculo(f);
                 free(tipo);
@@ -262,13 +256,15 @@ int main(void)
                 fclose(bin);
                 break;
             }
+
             char c;
-            while ((c = fgetc(bin)) != EOF)
-            {
+            while ((c = fgetc(bin)) != EOF){
                 ungetc(c, bin);
+                // ler e verificar se veiculo corresponde aos criterios de busca
                 veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
                 int next = filtrarVeiculo(bin, f, tipo[4], &v);
                 desalocar_veiculo(v);
+                // posicionar leitura do arquivo no proximo registro
                 if (next) fseek(bin, next, SEEK_CUR);
             }
 
@@ -277,9 +273,10 @@ int main(void)
             fclose(bin);
         }
         break;
-        // OK
-        case 4:
-        {
+        
+        /* Funcionalidade 4:
+        recuperacao e exibicao de registro a partir de RRN */
+        case 4:{
             // leitura do comando e abertura do arquivo
             char *tipo, *binname;
             int RRN;
@@ -291,8 +288,7 @@ int main(void)
                 break;
             }
             FILE *bin = fopen(binname, "rb");
-            if (bin == NULL)
-            {
+            if (bin == NULL){
                 printf("Falha no processamento do arquivo.\n");
                 free(binname);
                 free(tipo);
@@ -300,27 +296,29 @@ int main(void)
             }
 
             cabecalho rc = ler_cabecalho(bin, '1');
-            if (rc.status == '0')
-            {
+            if (rc.status == '0'){
                 printf("Falha no processamento do arquivo.\n");
                 fclose(bin);
                 free(binname);
                 free(tipo);
                 break;
             }
-            fseek(bin, RRN * 97, SEEK_CUR);
 
-            // leitura e exibicao do registro
+            // posicionar a leitura do arquivo no registro desejado
+            fseek(bin, RRN * 97, SEEK_CUR); 
+
+            // verificar se registro nao existe ou foi removido
             char removido;
             fread(&removido, 1, 1, bin);
-            if (feof(bin) || (removido == '1'))
-            {
+            if (feof(bin) || (removido == '1')){
                 printf("Registro inexistente.\n");
                 fclose(bin);
                 free(binname);
                 free(tipo);
                 break;
             }
+
+            // leitura e exibicao do registro
             fseek(bin, 4, SEEK_CUR);
             veiculo v = ler_veiculo(bin, 97 - 1 - 4);
             mostrar_veiculo(v);
