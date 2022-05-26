@@ -215,15 +215,25 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     }
     printf(
         "MARCA DO VEICULO: %s\n"
-        "MODELO DO VEICULO: %s\n"
-        "ANO DE FABRICACAO: %d\n"
-        "NOME DA CIDADE: %s\n"
-        "QUANTIDADE DE VEICULOS: %d\n\n",
+        "MODELO DO VEICULO: %s\n",
         strlen(v->marca) ? v->marca : "NAO PREENCHIDO",
-        strlen(v->modelo) ? v->modelo : "NAO PREENCHIDO",
-        (v->ano == -1) ? "NAO PREENCHIDO" : v->ano,
-        strlen(v->cidade) ? v->cidade : "NAO PREENCHIDO",
-        (v->qtt == -1) ? "NAO PREENCHIDO" : v->qtt
+        strlen(v->modelo) ? v->modelo : "NAO PREENCHIDO"
     );
+    if(v->ano == -1){
+        printf("ANO DE FABRICACAO: NAO PREENCHIDO\n");
+    }
+    else{
+        printf("ANO DE FABRICACAO: %d\n", v->ano);
+    }
+    printf(
+        "NOME DA CIDADE: %s\n"
+        strlen(v->cidade) ? v->cidade : "NAO PREENCHIDO"
+    );
+    if(v->qtt == -1){
+        printf("QUANTIDADE DE VEICULOS: NAO PREENCHIDO\n\n");
+    }
+    else{
+        printf("QUANTIDADE DE VEICULOS: %d\n\n", v->qtt);
+    }
     return tamRegistro - lido;
 }
