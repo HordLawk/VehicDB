@@ -37,7 +37,7 @@ parametros: ponteiro para arquivo */
 veiculo ler_veiculo_csv(FILE *stream);
 
 /* verifica se um veiculo corresponde a um ou mais criterios de busca, se sim exibe seus dados; 
-retorna offset para o proximo registro do arquivo binario    
+retorna offset (em relacao a posicao atual de leitura) para o proximo registro do arquivo binario    
 parametros: ponteiro para arquivo, veiculo com criterios de busca, tipo do arquivo, 
             veiculo a ser lido (passado por referencia) */
 int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v);
