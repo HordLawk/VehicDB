@@ -55,4 +55,5 @@ tests
 binario*.bin
 arquivoEntrada*.csv
 main
+programaTrab
 *.zip
