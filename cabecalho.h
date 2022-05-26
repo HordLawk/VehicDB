@@ -9,5 +9,6 @@ typedef struct cabecalho
 
 } cabecalho;
 
+// escrever cabecalho
 void escrever_cabecalho(cabecalho c, FILE *stream, char tipo);
 cabecalho ler_cabecalho(FILE *stream, char tipo);
