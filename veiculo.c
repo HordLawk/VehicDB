@@ -135,9 +135,9 @@ veiculo ler_veiculo_csv(FILE *stream)
     v.qtt = strlen(qtt) == 0 ? -1 : atoi(qtt);
     char *sigla = readWord(stream, ',');
     if (strlen(sigla) == 0)
-        strcpy(v.sigla, "$$");
+        strncpy(v.sigla, "$$", 2);
     else
-        strcpy(v.sigla, sigla);
+        strncpy(v.sigla, sigla, 2);
     v.marca = readWord(stream, ',');
     v.modelo = readWord(stream, ',');
 
