@@ -196,6 +196,12 @@ int main(void)
             char *tipo, *binname;
             int nCampos;
             scanf("%ms %ms %d", &tipo, &binname, &nCampos);
+            if(strcmp(tipo, "tipo1") && strcmp(tipo, "tipo2")){
+                printf("Falha no processamento do arquivo.\n");
+                free(binname);
+                free(tipo);
+                break;
+            }
             veiculo f = {-1, -1, -1, "$$", NULL, NULL, NULL};
             while (nCampos--)
             {
@@ -236,6 +242,7 @@ int main(void)
                 free(campo);
             }
             FILE *bin = fopen(binname, "rb");
+            free(binname);
             if (bin == NULL)
             {
                 printf("Falha no processamento do arquivo.\n");
@@ -244,7 +251,6 @@ int main(void)
                 break;
             }
 
-            free(binname);
             cabecalho rc = ler_cabecalho(bin, tipo[4]);
             if(!rc.status){
                 printf("Falha no processamento do arquivo.\n");
@@ -275,6 +281,12 @@ int main(void)
             char *tipo, *binname;
             int RRN;
             scanf("%ms %ms %d", &tipo, &binname, &RRN);
+            if(strcmp(tipo, "tipo1")){
+                printf("Falha no processamento do arquivo.\n");
+                free(binname);
+                free(tipo);
+                break;
+            }
             FILE *bin = fopen(binname, "rb");
             if (bin == NULL)
             {
