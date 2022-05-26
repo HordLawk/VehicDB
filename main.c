@@ -263,7 +263,7 @@ int main(void)
             while ((c = fgetc(bin)) != EOF)
             {
                 ungetc(c, bin);
-                veiculo v;
+                veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
                 int next = filtrarVeiculo(bin, f, tipo[4], &v);
                 desalocar_veiculo(v);
                 if (next) fseek(bin, next, SEEK_CUR);
