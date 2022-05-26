@@ -150,62 +150,93 @@ veiculo ler_veiculo_csv(FILE *stream){
 }
 
 int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
+    // guarda o tamanho dos bytes lidos do registro ate o momento
+    int lido = 0;
+    // guarda o tamanho total do registro em bytes
+    int tamRegistro;
+
     // campos de tamanho fixo
     char removido;
-    int lido = fread(&removido, 1, 1, stream);
-    int tamRegistro = 97;
+    fread(&removido, 1, 1, stream);
+    lido++;
     if(tipo == '1'){
+        // para o tipo1 os registros tem sempre 97 bytes
+        tamRegistro = 97;
         if(removido == '1') return tamRegistro - lido;
+        // ignora o campo de proximo arquivo removido ja que nao lidaremos com
+        // arquivos removidos
         fseek(stream, 4, SEEK_CUR);
         lido += 4;
     }
     else if(tipo == '2'){
+        // para o tipo2 o tamanho total esta armazenado no inicio do registro
         fread(&tamRegistro, 4, 1, stream);
         lido += 4;
+        // o tamanho armazenado no inicio do registro nao considera os 4 bytes
+        // do proprio campo nem o byte do campo de identificador de registros
+        // removido mas o funcionamento dessa funcao requer que sejam levados
+        // em consideracao todos os bytes do registro portanto somamos 5
         tamRegistro += 5;
         if(removido == '1') return tamRegistro - lido;
+        // para o tipo2 o campo de proximo arquivo removido e um long int
         fseek(stream, 8, SEEK_CUR);
         lido += 8;
     }
     fread(&v->id, 4, 1, stream);
     lido += 4;
+    // se o filtro exigir o campo id compara o id do registro com o do filtro
     if((f.id != -1) && (v->id != f.id)) return tamRegistro - lido;
     fread(&v->ano, 4, 1, stream);
     lido += 4;
+    // se o filtro exigir o campo ano compara o ano do registro com o do filtro
     if((f.ano != -1) && (v->ano != f.ano)) return tamRegistro - lido;
     fread(&v->qtt, 4, 1, stream);
     lido += 4;
+    // se o filtro exigir o campo qtt compara o qtt do registro com o do filtro
     if((f.qtt != -1) && (v->qtt != f.qtt)) return tamRegistro - lido;
     lido += fread(v->sigla, 1, 2, stream);
+    // se o filtro exigir o campo sigla compara a do registro com a do filtro
     if(strncmp(f.sigla, "$$", 2) && strncmp(v->sigla, f.sigla, 2)) return tamRegistro - lido;
 
     // campos de tamanho variavel
     v->cidade = NULL;
     v->marca = NULL;
     v->modelo = NULL;
+    // se tiver chegado ao final do registro checa se o filtro exige algum dos
+    // campos que ainda nao foram lidos
     if((lido >= tamRegistro) && (f.cidade || f.marca || f.modelo)) return tamRegistro - lido;
     char c = fgetc(stream);
     if((ungetc(c, stream) == '$') && (f.cidade || f.marca || f.modelo)) return tamRegistro - lido;
+    // guarda o tamanho do proximo campo variavel em bytes
     int tam;
     fread(&tam, 4, 1, stream);
     lido += 4;
+    // guarda o tipo do proximo campo variavel
     char codigo;
     lido += fread(&codigo, 1, 1, stream);
+    // codigo 0 se refere ao campo cidade
     if(codigo == '0'){
+        // aloca 1 byte a mais que o tamanho informado para o \0
         v->cidade = malloc(tam + 1);
         lido += fread(v->cidade, 1, tam, stream);
         v->cidade[tam] = '\0';
+        // se o filtro exigir o campo cidade compara com o do registro
+        // se tiver chegado ao final do registro checa se o filtro exige algum
+        // dos campos que ainda nao foram lidos
         if((f.cidade && strcmp(v->cidade, f.cidade)) || ((lido >= tamRegistro) && (f.marca || f.modelo))) return tamRegistro - lido;
         char c = fgetc(stream);
         if((ungetc(c, stream) == '$') && (f.marca || f.modelo)) return tamRegistro - lido;
+        // como o campo cidade foi lido passa para o proximo campo
         fread(&tam, 4, 1, stream);
         lido += 4;
         lido += fread(&codigo, 1, 1, stream);
     }
     else{
+        // se nao houver campo cidade checa se o filtro exige esse campo
         if(f.cidade) return tamRegistro - lido;
     }
-    if(codigo == '1'){
+    // codigo 1 se refere ao campo marca
+    if(codigo == '1'){                                                                                                     
         v->marca = malloc(tam + 1);
         lido += fread(v->marca, 1, tam, stream);
         v->marca[tam] = '\0';
@@ -219,6 +250,7 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     else{
         if(f.marca) return tamRegistro - lido;
     }
+    // codigo 2 se refere ao campo modelo
     if(codigo == '2'){
         v->modelo = malloc(tam + 1);
         lido += fread(v->modelo, 1, tam, stream);
