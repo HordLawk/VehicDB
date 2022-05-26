@@ -154,7 +154,7 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     int lido = fread(&removido, 1, 1, stream);
     int tamRegistro = 97;
     if(tipo == '1'){
-        if(removido == '1') return 1;
+        if(removido == '1') return tamRegistro - lido;
         fseek(stream, 4, SEEK_CUR);
         lido += 4;
     }
