@@ -4,24 +4,6 @@
 #include <ctype.h>
 #include "utils.h"
 
-char *readWord(FILE *stream, char separador)
-{
-	char *word = NULL;
-	char c;
-	while ((c = fgetc(stream)) == '\n')
-		;
-	ungetc(c, stream);
-	for (int i = 0; !i || (word[i - 1] != '\0'); i++)
-	{
-		word = realloc(word, (i + 1) * sizeof(char));
-		char tmp = fgetc(stream);
-		word[i] = ((tmp == '\n') || feof(stream) || (tmp == '\r') || (tmp == separador)) ? '\0' : tmp;
-		if (tmp == '\r')
-			fgetc(stream);
-	}
-	return word;
-}
-
 void linebreak(FILE *stream)
 {
 	char crlf = fgetc(stream);

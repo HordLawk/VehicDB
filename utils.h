@@ -1,7 +1,5 @@
 #include <stdio.h>
 
-char *readWord(FILE *stream, char separador);
-
 /* funcao disponibilizada na especificacao do trabalho para
 verificar se arquivo binario foi escrito corretamente */
 void binarioNaTela(char *nomeArquivoBinario);

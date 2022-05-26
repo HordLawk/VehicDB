@@ -145,22 +145,15 @@ veiculo ler_veiculo_csv(FILE *stream)
     char *sigla;
     fscanf(stream, "%m[^,]", &sigla);
     fgetc(stream);
-    if(sigla){
-        strncpy(v.sigla, sigla, 2);
-    }
-    else{
-        strncpy(v.sigla, "$$", 2);
-    }
+    strncpy(v.sigla, sigla ? sigla : "$$", 2);
     fscanf(stream, "%m[^,]", &v.marca);
     fgetc(stream);
     fscanf(stream, "%m[^\r\n]", &v.modelo);
     linebreak(stream);
-
     free(id);
     free(ano);
     free(qtt);
     free(sigla);
-
     return v;
 }
 
