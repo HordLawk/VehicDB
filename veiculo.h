@@ -17,3 +17,4 @@ void escrever_veiculo(veiculo v, FILE *stream);
 int calcular_tamanho(veiculo v);
 void desalocar_veiculo(veiculo v);
 veiculo ler_veiculo_csv(FILE *stream);
+int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v);

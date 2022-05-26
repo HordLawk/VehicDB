@@ -142,8 +142,88 @@ veiculo ler_veiculo_csv(FILE *stream)
     v.modelo = readWord(stream, ',');
 
     free(id);
+    free(ano);
     free(qtt);
     free(sigla);
 
     return v;
+}
+
+int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
+    char removido;
+    int lido = fread(&removido, 1, 1, stream);
+    int tamRegistro = 97;
+    if(tipo == '1'){
+        if(removido == '1') return 1;
+        fseek(stream, 4, SEEK_CUR);
+        lido += 4;
+    }
+    else if(tipo == '2'){
+        fread(&tamRegistro, 4, 1, stream);
+        lido += 4;
+        tamRegistro += 5;
+        if(removido == '1') return tamRegistro - lido;
+        fseek(stream, 8, SEEK_CUR);
+        lido += 8;
+    }
+    fread(&v->id, 4, 1, stream);
+    lido += 4;
+    if((f.id != -1) && (v->id != f.id)) return tamRegistro - lido;
+    fread(&v->ano, 4, 1, stream);
+    lido += 4;
+    if((f.ano != -1) && (v->ano != f.ano)) return tamRegistro - lido;
+    fread(&v->qtt, 4, 1, stream);
+    lido += 4;
+    if((f.qtt != -1) && (v->qtt != f.qtt)) return tamRegistro - lido;
+    lido += fread(v->sigla, 1, 2, stream);
+    if(strncmp(f.sigla, "$$", 2) && strncmp(v->sigla, f.sigla, 2)) return tamRegistro - lido;
+    v->cidade = calloc(100, sizeof(char));
+    v->marca = calloc(100, sizeof(char));
+    v->modelo = calloc(100, sizeof(char));
+    if((lido >= tamRegistro) && (f.cidade || f.marca || f.modelo)) return tamRegistro - lido;
+    char c = fgetc(stream);
+    if((ungetc(c, stream) == '$') && (f.cidade || f.marca || f.modelo)) return tamRegistro - lido;
+    int tam;
+    fread(&tam, 4, 1, stream);
+    lido += 4;
+    char codigo;
+    lido += fread(&codigo, 1, 1, stream);
+    if(codigo == '0'){
+        lido += fread(v->cidade, 1, tam, stream);
+        v->cidade[tam] = '\0';
+        if((f.cidade && strcmp(v->cidade, f.cidade)) || ((lido >= tamRegistro) && (f.marca || f.modelo))) return tamRegistro - lido;
+        char c = fgetc(stream);
+        if((ungetc(c, stream) == '$') && (f.marca || f.modelo)) return tamRegistro - lido;
+        fread(&tam, 4, 1, stream);
+        lido += 4;
+        lido += fread(&codigo, 1, 1, stream);
+    }
+    if(codigo == '1'){
+        lido += fread(v->marca, 1, tam, stream);
+        v->marca[tam] = '\0';
+        if((f.marca && strcmp(v->marca, f.marca)) || ((lido >= tamRegistro) && f.modelo)) return tamRegistro - lido;
+        char c = fgetc(stream);
+        if((ungetc(c, stream) == '$') && f.modelo) return tamRegistro - lido;
+        fread(&tam, 4, 1, stream);
+        lido += 4;
+        lido += fread(&codigo, 1, 1, stream);
+    }
+    if(codigo == '2'){
+        lido += fread(v->modelo, 1, tam, stream);
+        v->modelo[tam] = '\0';
+        if(f.modelo && strcmp(v->modelo, f.modelo)) return tamRegistro - lido;
+    }
+    printf(
+        "MARCA DO VEICULO: %s\n"
+        "MODELO DO VEICULO: %s\n"
+        "ANO DE FABRICACAO: %d\n"
+        "NOME DA CIDADE: %s\n"
+        "QUANTIDADE DE VEICULOS: %d\n\n",
+        strlen(v->marca) ? v->marca : "NAO PREENCHIDO",
+        strlen(v->modelo) ? v->modelo : "NAO PREENCHIDO",
+        (v->ano == -1) ? "NAO PREENCHIDO" : v->ano,
+        strlen(v->cidade) ? v->cidade : "NAO PREENCHIDO",
+        (v->qtt == -1) ? "NAO PREENCHIDO" : v->qtt
+    );
+    return tamRegistro - lido;
 }
