@@ -223,21 +223,15 @@ int main(void)
                 }
                 else if (!strcmp(campo, "cidade"))
                 {
-                    char *cidade = calloc(100, sizeof(char));
-                    scan_quote_string(cidade);
-                    f.cidade = cidade;
+                    f.cidade = scan_quote_string();
                 }
                 else if (!strcmp(campo, "marca"))
                 {
-                    char *marca = calloc(100, sizeof(char));
-                    scan_quote_string(marca);
-                    f.marca = marca;
+                    f.marca = scan_quote_string();
                 }
                 else if (!strcmp(campo, "modelo"))
                 {
-                    char *modelo = calloc(100, sizeof(char));
-                    scan_quote_string(modelo);
-                    f.modelo = modelo;
+                    f.modelo = scan_quote_string();
                 }
                 free(campo);
             }

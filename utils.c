@@ -60,49 +60,38 @@ void binarioNaTela(char *nomeArquivoBinario)
 	fclose(fs);
 }
 
-void scan_quote_string(char *str)
+char *scan_quote_string()
 {
-
-	/*
-	 *	Use essa função para ler um campo string delimitado entre aspas (").
-	 *	Chame ela na hora que for ler tal campo. Por exemplo:
-	 *
-	 *	A entrada está da seguinte forma:
-	 *		nomeDoCampo "MARIA DA SILVA"
-	 *
-	 *	Para ler isso para as strings já alocadas str1 e str2 do seu programa, você faz:
-	 *		scanf("%s", str1); // Vai salvar nomeDoCampo em str1
-	 *		scan_quote_string(str2); // Vai salvar MARIA DA SILVA em str2 (sem as aspas)
-	 *
-	 */
-
+	char *str;
 	char R;
-
-	while ((R = getchar()) != EOF && isspace(R))
-		; // ignorar espaços, \r, \n...
-
+	while ((R = getchar()) != EOF && isspace(R));
 	if (R == 'N' || R == 'n')
-	{ // campo NULO
+	{
 		getchar();
 		getchar();
-		getchar();		 // ignorar o "ULO" de NULO.
-		strcpy(str, ""); // copia string vazia
+		getchar();
+		str = malloc(sizeof(char));
+		strcpy(str, "");
 	}
 	else if (R == '\"')
 	{
-		if (scanf("%[^\"]", str) != 1)
-		{ // ler até o fechamento das aspas
+		if (scanf("%m[^\"]", &str) != 1)
+		{
+			str = malloc(sizeof(char));
 			strcpy(str, "");
 		}
-		getchar(); // ignorar aspas fechando
+		getchar();
 	}
 	else if (R != EOF)
-	{ // vc tá tentando ler uma string que não tá entre aspas! Fazer leitura normal %s então, pois deve ser algum inteiro ou algo assim...
+	{
+		str = malloc(sizeof(char));
 		str[0] = R;
-		scanf("%s", &str[1]);
+		scanf("%ms", &str[1]);
 	}
 	else
-	{ // EOF
+	{
+		str = malloc(sizeof(char));
 		strcpy(str, "");
 	}
+	return str;
 }

@@ -177,9 +177,9 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     if((f.qtt != -1) && (v->qtt != f.qtt)) return tamRegistro - lido;
     lido += fread(v->sigla, 1, 2, stream);
     if(strncmp(f.sigla, "$$", 2) && strncmp(v->sigla, f.sigla, 2)) return tamRegistro - lido;
-    v->cidade = calloc(100, sizeof(char));
-    v->marca = calloc(100, sizeof(char));
-    v->modelo = calloc(100, sizeof(char));
+    v->cidade = NULL;
+    v->marca = NULL;
+    v->modelo = NULL;
     if((lido >= tamRegistro) && (f.cidade || f.marca || f.modelo)) return tamRegistro - lido;
     char c = fgetc(stream);
     if((ungetc(c, stream) == '$') && (f.cidade || f.marca || f.modelo)) return tamRegistro - lido;
@@ -189,6 +189,7 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     char codigo;
     lido += fread(&codigo, 1, 1, stream);
     if(codigo == '0'){
+        v->cidade = malloc(tam + 1);
         lido += fread(v->cidade, 1, tam, stream);
         v->cidade[tam] = '\0';
         if((f.cidade && strcmp(v->cidade, f.cidade)) || ((lido >= tamRegistro) && (f.marca || f.modelo))) return tamRegistro - lido;
@@ -202,6 +203,7 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
         if(f.cidade) return tamRegistro - lido;
     }
     if(codigo == '1'){
+        v->marca = malloc(tam + 1);
         lido += fread(v->marca, 1, tam, stream);
         v->marca[tam] = '\0';
         if((f.marca && strcmp(v->marca, f.marca)) || ((lido >= tamRegistro) && f.modelo)) return tamRegistro - lido;
@@ -215,6 +217,7 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
         if(f.marca) return tamRegistro - lido;
     }
     if(codigo == '2'){
+        v->modelo = malloc(tam + 1);
         lido += fread(v->modelo, 1, tam, stream);
         v->modelo[tam] = '\0';
         if(f.modelo && strcmp(v->modelo, f.modelo)) return tamRegistro - lido;
@@ -225,8 +228,8 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     printf(
         "MARCA DO VEICULO: %s\n"
         "MODELO DO VEICULO: %s\n",
-        strlen(v->marca) ? v->marca : "NAO PREENCHIDO",
-        strlen(v->modelo) ? v->modelo : "NAO PREENCHIDO"
+        v->marca ? v->marca : "NAO PREENCHIDO",
+        v->modelo ? v->modelo : "NAO PREENCHIDO"
     );
     if(v->ano == -1){
         printf("ANO DE FABRICACAO: NAO PREENCHIDO\n");
@@ -236,7 +239,7 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     }
     printf(
         "NOME DA CIDADE: %s\n",
-        strlen(v->cidade) ? v->cidade : "NAO PREENCHIDO"
+        v->cidade ? v->cidade : "NAO PREENCHIDO"
     );
     if(v->qtt == -1){
         printf("QUANTIDADE DE VEICULOS: NAO PREENCHIDO\n\n");
