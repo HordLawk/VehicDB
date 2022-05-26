@@ -226,7 +226,7 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
         printf("ANO DE FABRICACAO: %d\n", v->ano);
     }
     printf(
-        "NOME DA CIDADE: %s\n"
+        "NOME DA CIDADE: %s\n",
         strlen(v->cidade) ? v->cidade : "NAO PREENCHIDO"
     );
     if(v->qtt == -1){
