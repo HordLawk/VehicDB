@@ -86,7 +86,8 @@ char *scan_quote_string()
 	{
 		str = malloc(sizeof(char));
 		str[0] = R;
-		scanf("%ms", &str[1]);
+		char *str1 = str + 1;
+		scanf("%ms", &str1);
 	}
 	else
 	{
