@@ -18,6 +18,8 @@ int main(void)
 
             FILE *csv = fopen(csvname, "r");
             FILE *bin = fopen(binname, "wb");
+
+            // Se o arquivo CSV nao existir no diretorio atual
             if (csv == NULL)
             {
                 printf("Falha no processamento do arquivo.\n");
@@ -36,6 +38,7 @@ int main(void)
                             "MARCA DO VEICULO: ",
                             "MODELO DO VEICULO: "};
 
+            // Se o tipo selecionado for "tipo1"
             if (strcmp(tipo, "tipo1") == 0)
             {
                 escrever_cabecalho(rc, bin, '1');
