@@ -6,6 +6,36 @@
 #include "cabecalho.h"
 #include "indice.h"
 
+void ler_campo(veiculo *f){
+    char *campo;
+    scanf("%ms", &campo);
+    printf("campo lido: %s\n", campo);
+    if (!strcmp(campo, "id")){
+        scanf("%d ", &f->id);
+    }
+    else if (!strcmp(campo, "ano")){
+        scanf("%d ", &f->ano);
+    }
+    else if (!strcmp(campo, "quantidade")){
+        scanf("%d ", &f->qtt);
+    }
+    else if (!strcmp(campo, "sigla")){
+        char *sigla = scan_quote_string();
+        strncpy(f->sigla, sigla, 2);
+        free(sigla);
+    }
+    else if (!strcmp(campo, "cidade")){
+        f->cidade = scan_quote_string();
+    }
+    else if (!strcmp(campo, "marca")){
+        f->marca = scan_quote_string();
+    }
+    else if (!strcmp(campo, "modelo")){
+        f->modelo = scan_quote_string();
+    }
+    free(campo);
+}
+
 int main(void){
     int cmd;
     scanf("%d ", &cmd);
@@ -362,7 +392,7 @@ int main(void){
                     break;
                 }
 
-                Indice *indices;
+                Indice *indices = NULL;
                 int qtd_ind = 0;
 
                 // leitura dos registros e criacao dos indices
@@ -408,7 +438,7 @@ int main(void){
                     break;
                 }
 
-                Indice *indices;
+                Indice *indices = NULL;
                 int qtd_ind = 0;
 
                 // leitura dos registros
@@ -436,7 +466,7 @@ int main(void){
                 }
 
                 ordenar_indices(indices, qtd_ind, '2');
-                mostrar_indices(indices,qtd_ind, '2');
+                //mostrar_indices(indices,qtd_ind, '2');
                 escrever_indices(indices, qtd_ind, ind, '2');
             }
 
@@ -458,8 +488,69 @@ int main(void){
         /* Funcionalidade 6:
         remocao logica de um registro de um arquivo de dados */
         case 6:{
-            
+            // leitura do comando e abertura dos arquivos
+            char *tipo, *binname, *indname;
+            int nRemocoes;
+            scanf("%ms %ms %ms %d", &tipo, &binname, &indname, &nRemocoes);
+            FILE *bin = fopen(binname, "rb");
+            FILE *ind = fopen(indname, "rb");
+            if (bin == NULL || ind == NULL){
+                printf("Falha no processamento do arquivo.\n");
+                free(tipo);
+                free(binname);
+                free(indname);
+                if (bin != NULL) fclose(bin);
+                if (ind != NULL) fclose(ind);
+                break;
+            }
 
+            // verificacao dos status e leitura dos indices
+            int qtd_ind = -1;
+            Indice *indices = NULL;
+            if (strcmp(tipo, "tipo1") == 0){
+                cabecalho rc = ler_cabecalho(bin, '1');
+                if (rc.status == '0'){
+                    printf("Falha no processamento do arquivo.\n");
+                    free(tipo);
+                    free(binname);
+                    free(indname);
+                    fclose(bin);
+                    fclose(ind);
+                    break;
+                }
+                indices = ler_indices(ind, &qtd_ind, '1');
+            } 
+            else if (strcmp(tipo, "tipo2") == 0){
+                cabecalho rc = ler_cabecalho(bin, '2');
+                if (rc.status == '0'){
+                    printf("Falha no processamento do arquivo.\n");
+                    free(tipo);
+                    free(binname);
+                    free(indname);
+                    fclose(bin);
+                    fclose(ind);
+                }
+                indices = ler_indices(ind, &qtd_ind, '2');
+            }
+
+            mostrar_indices(indices, qtd_ind, '2');
+
+            while (nRemocoes--){
+                int nCampos;
+                scanf("%d", &nCampos);
+                veiculo f = {-1, -1, -1, "$$", NULL, NULL, NULL};
+                while (nCampos--){
+                    ler_campo(&f);
+                }
+
+                // teste
+                printf("id: %d\n", f.id);
+                printf("sigla: %s\n", f.sigla);
+                mostrar_veiculo(f);
+                //
+
+                //while (buscar_veiculo(FILE *bin, FILE, veiculo f, char tipo, veiculo *v))
+            }
 
         }
         break;

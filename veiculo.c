@@ -264,3 +264,12 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     mostrar_veiculo(*v);
     return tamRegistro - lido;
 }
+
+/*
+int buscar_veiculo(FILE *stream, Indice *indices, int qtd_ind, veiculo f, char tipo){
+    if (f.id != -1){
+        int pos = busca_indices(indices, 0, qtd_ind, f.id);
+
+    }
+
+}*/
