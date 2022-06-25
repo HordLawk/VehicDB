@@ -52,6 +52,8 @@ Mkfile.old
 dkms.conf
 
 tests
+bins
+indice*.bin
 binario*.bin
 arquivoEntrada*.csv
 main

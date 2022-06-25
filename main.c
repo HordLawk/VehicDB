@@ -4,6 +4,7 @@
 #include "veiculo.h"
 #include "utils.h"
 #include "cabecalho.h"
+#include "indice.h"
 
 int main(void){
     int cmd;
@@ -246,7 +247,7 @@ int main(void){
             }
 
             cabecalho rc = ler_cabecalho(bin, tipo[4]);
-            if(!rc.status){
+            if(rc.status == '0'){
                 printf("Falha no processamento do arquivo.\n");
                 desalocar_veiculo(f);
                 free(tipo);
@@ -324,6 +325,156 @@ int main(void){
             fclose(bin);
             free(binname);
             free(tipo);
+        }
+        break;
+
+        /* Funcionalidade 5:
+        criacao de arquivo de indice primario simples a partir de arquivo de dados */
+        case 5:{
+            // leitura do comando e abertura dos arquivos
+            char *tipo, *binname, *indname;
+            scanf("%ms %ms %ms", &tipo, &binname, &indname);
+            FILE *bin = fopen(binname, "rb");
+            FILE *ind = fopen(indname, "wb");
+            if (bin == NULL || ind == NULL){
+                printf("Falha no processamento do arquivo.\n");
+                free(tipo);
+                free(binname);
+                free(indname);
+                if (bin != NULL) fclose(bin);
+                if (ind != NULL) fclose(ind);
+                break;
+            }
+
+            char status = '0';
+            fwrite(&status, sizeof(char), 1, ind);
+
+            // se tipo selecionado for "tipo1"
+            if (strcmp(tipo, "tipo1") == 0){
+                cabecalho rc = ler_cabecalho(bin, '1');
+                if (rc.status == '0'){
+                    printf("Falha no processamento do arquivo.\n");
+                    free(tipo);
+                    free(binname);
+                    free(indname);
+                    fclose(bin);
+                    fclose(ind);
+                    break;
+                }
+
+                Indice *indices;
+                int qtd_ind = 0;
+
+                // leitura dos registros e criacao dos indices
+                int RRN = -1;
+                char removido;
+                while (fread(&removido, 1, 1, bin), !feof(bin)){
+                    RRN++;
+
+                    // verificar se registro foi removido
+                    if (removido == '1'){
+                        fseek(bin, 96, SEEK_CUR);
+                        continue;
+                    }
+                    fseek(bin, 4, SEEK_CUR);
+
+                    // criar indice que representa registro lido
+                    Indice *aux = realloc(indices, ((qtd_ind + 1) * sizeof(Indice)));
+                    indices = aux;                    
+                    indices[qtd_ind].RRN = RRN;
+                    fread(&indices[qtd_ind].id, sizeof(int), 1, bin);
+                    qtd_ind++;
+
+                    // mover ponteiro para proximo registro
+                    fseek(bin, 88, SEEK_CUR);
+                }
+
+                ordenar_indices(indices, qtd_ind, '1');
+                //mostrar_indices(indices,qtd_ind, '1');
+                escrever_indices(indices, qtd_ind, ind, '1');
+
+                free(indices);
+            }
+            // se tipo selecionado for "tipo2"
+            else if (strcmp(tipo, "tipo2") == 0){
+                cabecalho rc = ler_cabecalho(bin, '2');
+                if (rc.status == '0'){
+                    printf("Falha no processamento do arquivo.\n");
+                    free(tipo);
+                    free(binname);
+                    free(indname);
+                    fclose(bin);
+                    fclose(ind);
+                    break;
+                }
+
+                Indice *indices;
+                int qtd_ind = 0;
+
+                // leitura dos registros
+                char removido;
+                while (fread(&removido, 1, 1, bin), !feof(bin)){
+                    // verificar se registro foi removido
+                    int tamRegistro;
+                    fread(&tamRegistro, 4, 1, bin);
+                    if (removido == '1'){
+                        fseek(bin, tamRegistro, SEEK_CUR);
+                        continue;
+                    }
+                    fseek(bin, 8, SEEK_CUR);
+
+                    long proxByteOffset = ftell(bin) - 1 - 8 - 4; // eu acho
+                    // criar indice que representa registro lido
+                    Indice *aux = realloc(indices, ((qtd_ind + 1) * sizeof(Indice)));
+                    indices = aux;
+                    indices[qtd_ind].byteOffset = proxByteOffset;
+                    fread(&indices[qtd_ind].id, sizeof(int), 1, bin);
+                    qtd_ind++;
+
+                    // mover ponteiro para proximo registro
+                    fseek(bin, tamRegistro - 4 - 8, SEEK_CUR); 
+                }
+
+                ordenar_indices(indices, qtd_ind, '2');
+                mostrar_indices(indices,qtd_ind, '2');
+                escrever_indices(indices, qtd_ind, ind, '2');
+            }
+
+            status = '1';
+            fseek(ind, 0, SEEK_SET);
+            fwrite(&status, sizeof(char), 1, ind);
+
+            fclose(bin);
+            fclose(ind);
+
+            binarioNaTela(indname);
+
+            free(tipo);
+            free(binname);
+            free(indname);
+        }
+        break;
+
+        /* Funcionalidade 6:
+        remocao logica de um registro de um arquivo de dados */
+        case 6:{
+            
+
+
+        }
+        break;
+
+        /* Funcionalidade 7:
+        insercao de um novo registro em um arquivo de dados */
+        case 7:{
+            
+        }
+        break;
+
+        /* Funcionalidade 8:
+        atualizacao de registros de um arquivo de dados */
+        case 8:{
+
         }
         break;
     }
