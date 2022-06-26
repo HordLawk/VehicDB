@@ -409,7 +409,6 @@ long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, cha
         ungetc(c, stream);
         veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
         long int cur = filtrarVeiculo(stream, f, tipo, &v, next);
-        printf("cur: %d\nnext: %d\n", cur, *next);
         desalocar_veiculo(v);
         if(cur != -1) return cur;
         if (*next) fseek(stream, *next, SEEK_CUR);
