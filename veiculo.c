@@ -152,6 +152,7 @@ veiculo ler_veiculo_csv(FILE *stream){
 }
 
 long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int *next){
+    // guarda o offset do inicio do registro em relacao ao arquivo inteiro
     long int inicio = ftell(stream);
     // guarda o tamanho dos bytes lidos do registro ate o momento
     int lido = 0;
@@ -238,6 +239,7 @@ long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int
     int tam;
     // guarda o tipo do proximo campo variavel
     char codigo;
+    // se tiver chegado ao final do registro nao tenta ler proximos campos
     if(lido >= tamRegistro){
         codigo = -1;
     }
@@ -264,7 +266,7 @@ long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int
             *next = tamRegistro - lido;
             return -1;
         }
-        // como o campo cidade foi lido passa para o proximo campo
+        // como o campo cidade foi lido passa para o proximo campo se nao tiver chegado ao final do arquivo
         if(lido >= tamRegistro){
             codigo = -1;
         }
@@ -336,6 +338,7 @@ veiculo ler_novo_veiculo(FILE *stream){
     v.marca = NULL;
     v.modelo = NULL;
 
+    // le os dados como strings
     char *id, *ano, *qtt, *sigla, *cidade, *marca, *modelo;
     fscanf(stream, "%ms", &id);
     fscanf(stream, "%ms", &ano);
@@ -345,10 +348,12 @@ veiculo ler_novo_veiculo(FILE *stream){
     marca = scan_quote_string();
     modelo = scan_quote_string();
 
+    // converte os dados numericos para inteiros
     v.id = (strcmp(id, "NULO") == 0) ? -1 : atoi(id);
     v.ano = (strcmp(ano, "NULO") == 0) ? -1 : atoi(ano);
     v.qtt = (strcmp(qtt, "NULO") == 0) ? -1 : atoi(qtt);
 
+    // adiciona lixo no espaco da sigla caso esteja vazia
     if (strcmp(sigla, "") == 0) strncpy(v.sigla, "$$", 2);
     else strncpy(v.sigla, sigla, 2);
 
@@ -369,47 +374,32 @@ veiculo ler_novo_veiculo(FILE *stream){
 }
 
 long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, char tipo, long int *next){
-    indices = (Indice*)indices;
+    // se a busca usar id ela deve ser feita pela lista de indices
     if (f.id != -1){
-        // printf("antes do busca indices\n");
         int pos = busca_indices(indices, 0, qtd_ind, f.id);
-        // printf("posicao: %d\n", pos);
         if(pos == -1) return -1;
-        switch(tipo){
-            case '1':{
-                long offset = 182 + ((Indice*)indices)[pos].RRN * 97;
-                long cur = ftell(stream);
-                fseek(stream, offset, SEEK_SET);
-                veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
-                // printf("quarto\n");
-                long filtro = filtrarVeiculo(stream, f, tipo, &v, next);
-                // printf("quinto\n");
-                desalocar_veiculo(v);
-                // printf("sexto");
-                fseek(stream, cur, SEEK_SET);
-                return filtro;
-            }
-            break;
-            case '2':{
-                long offset = ((Indice*)indices)[pos].byteOffset;
-                long cur = ftell(stream);
-                fseek(stream, offset, SEEK_SET);
-                veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
-                long filtro = filtrarVeiculo(stream, f, tipo, &v, next);
-                desalocar_veiculo(v);
-                fseek(stream, cur, SEEK_SET);
-                return filtro;
-            }
-            break;
-        }
+        // calcula o offset do registro dependendo do tipo
+        long offset = (tipo == '1') ? 182 + ((Indice*)indices)[pos].RRN * 97 : ((Indice*)indices)[pos].byteOffset;
+        // salva a posicao atual do ponteiro do arquivo de dados para poder voltar para ela no final da busca
+        long cur = ftell(stream);
+        fseek(stream, offset, SEEK_SET);
+        veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
+        // checa se o registro do indice encontrado coincide com os outros campos da busca
+        long filtro = filtrarVeiculo(stream, f, tipo, &v, next);
+        desalocar_veiculo(v);
+        // retorna o ponteiro do arquivo a posicao antes da busca
+        fseek(stream, cur, SEEK_SET);
+        return filtro;
     }
     
+    // se a busca nao usar id ela e feita sequencialmente pelo arquivo de dados
     char c = fgetc(stream);
     while (!feof(stream)){
         ungetc(c, stream);
         veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
         long int cur = filtrarVeiculo(stream, f, tipo, &v, next);
         desalocar_veiculo(v);
+        // retorna o primeiro registro que coincidir com os campos da busca
         if(cur != -1) return cur;
         if (*next) fseek(stream, *next, SEEK_CUR);
         c = fgetc(stream);
@@ -418,10 +408,12 @@ long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, cha
 }
 
 void atualizar_veiculo_1(veiculo *v, veiculo *valores, veiculo *campos){
+    // valores de tamanho fixo
     if (campos->id != -1)  v->id = valores->id;
     if (campos->ano != -1) v->ano = valores->ano;
     if (campos->qtt != -1) v->qtt = valores->qtt;
     if (strncmp(campos->sigla, "$$", 2)) strncpy(v->sigla, valores->sigla, 2);
+    // valores de tamanho variavel
     if (campos->cidade){
         if(v->cidade){
             free(v->cidade);
@@ -429,6 +421,7 @@ void atualizar_veiculo_1(veiculo *v, veiculo *valores, veiculo *campos){
         }
         if(valores->cidade){
             v->cidade = realloc(v->cidade, (strlen(valores->cidade) * sizeof(char)) + 1);
+            // se o campo deve ser atualizado e se foi dado um novo valor para ele copia o valor para o objeto
             strcpy(v->cidade, valores->cidade);
         }
     }
@@ -455,27 +448,28 @@ void atualizar_veiculo_1(veiculo *v, veiculo *valores, veiculo *campos){
 }
 
 void remover_veiculo(FILE *bin, long cur, char tipo, void *rc){
-    rc = ((cabecalho *)rc);
     fseek(bin, cur, SEEK_SET);
     char rem = '1';
+    // define o registro como logicamente removido
     fwrite(&rem, 1, 1, bin);
     if(tipo == '1'){
+        // se for tipo 1 escreve o RRN no topo da pilha no campo de proximo RRN deletado do registro
         fwrite(&((cabecalho *)rc)->topo1, 4, 1, bin);
+        // substitui o topo da pilha pelo RRN do ultimo registro
         ((cabecalho *)rc)->topo1 = (cur - 182) / 97;
     }
     else if(tipo == '2'){
         int tam;
         fread(&tam, 4, 1, bin);
-        // printf("tamanho: %d\n", tam);
+        // salva o offset do campo de proximo offset removido
         long prox = ftell(bin);
         long ant = -1;
         long offset;
-        // printf("topo: %d\n", rc.topo2);
         if(((cabecalho *)rc)->topo2 != -1){
             fseek(bin, ((cabecalho *)rc)->topo2 + 1, SEEK_SET);
             int tam2;
             fread(&tam2, 4, 1, bin);
-            // printf("%d\n", tam2);
+            // se o topo da lista ordenada nao estiver vazio procura o proximo registro deletado menor que o ultimo
             while(tam < tam2){
                 ant = ftell(bin);
                 fread(&offset, 8, 1, bin);
@@ -484,11 +478,13 @@ void remover_veiculo(FILE *bin, long cur, char tipo, void *rc){
             }
         }
         if(ant == -1){
+            // subtitui apenas o topo
             fseek(bin, prox, SEEK_SET);
             fwrite(&((cabecalho *)rc)->topo2, 8, 1, bin);
             ((cabecalho *)rc)->topo2 = cur;
         }
         else{
+            // refaz a ligacao dos registros removidos para incluir o novo registro no meio
             fseek(bin, ant, SEEK_SET);
             fwrite(&cur, 8, 1, bin);
             fseek(bin, prox, SEEK_SET);
