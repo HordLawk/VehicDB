@@ -9,7 +9,6 @@
 void ler_campo(veiculo *f){
     char *campo;
     scanf("%ms", &campo);
-    printf("campo lido: %s\n", campo);
     if (!strcmp(campo, "id")){
         scanf("%d ", &f->id);
     }
@@ -34,6 +33,52 @@ void ler_campo(veiculo *f){
         f->modelo = scan_quote_string();
     }
     free(campo);
+}
+
+void ler_novo_campo(veiculo *valores, veiculo *campos){
+    char *campo, *valor;
+    scanf("%ms", &campo);
+    //printf("campo lido: %s\n", campo);
+    if (!strcmp(campo, "id")){
+        campos->id = 1;
+        scanf("%ms", &valor);
+        if (strcmp(valor, "NULO") != 0) valores->id = atoi(valor);
+    }
+    else if (!strcmp(campo, "ano")){
+        campos->ano = 1;
+        scanf("%ms", &valor);
+        if (strcmp(valor, "NULO") != 0) valores->ano = atoi(valor);
+    }
+    else if (!strcmp(campo, "qtt")){
+        campos->qtt = 1;
+        scanf("%ms", &valor);
+        if (strcmp(valor, "NULO") != 0) valores->qtt = atoi(valor);
+    }
+    else if (!strcmp(campo, "sigla")){
+        strncpy(campos->sigla, "11", 2);
+        valor = scan_quote_string();
+        if (strcmp(valor, "") != 0) strncpy(valores->sigla, valor, 2);
+    }
+    else if (!strcmp(campo, "cidade")){
+        campos->cidade = malloc(2 * sizeof(char));
+        strcpy(campos->cidade, "1");
+        valor = scan_quote_string();
+        if (strcmp(valor, "") != 0) strcpy(valores->cidade, valor);
+    }
+    else if (!strcmp(campo, "marca")){
+        campos->marca = malloc(2 * sizeof(char));
+        strcpy(campos->marca, "1");
+        valor = scan_quote_string();
+        if (strcmp(valor, "") != 0) strcpy(valores->marca, valor);
+    }
+    else if (!strcmp(campo, "modelo")){
+        campos->modelo = malloc(2 * sizeof(char));
+        strcpy(campos->modelo, "1");
+        valor = scan_quote_string();
+        if (strcmp(valor, "") != 0) strcpy(valores->modelo, valor);
+    }
+    free(campo);
+    free(valor);
 }
 
 int main(void){
@@ -221,6 +266,7 @@ int main(void){
 
         /* Funcionalidade 3:
         recuperacao de todos os registros que satisfazem criterios de busca */
+        /*
         case 3:{
             // leitura do comando
             char *tipo, *binname;
@@ -301,7 +347,7 @@ int main(void){
             fclose(bin);
         }
         break;
-        
+        */
         /* Funcionalidade 4:
         recuperacao e exibicao de registro a partir de RRN */
         case 4:{
@@ -479,7 +525,7 @@ int main(void){
             int nInsercoes;
             scanf("%ms %ms %ms %d", &tipo, &binname, &indname, &nInsercoes);
             FILE *bin = fopen(binname, "rb+");
-            FILE *ind = fopen(indname, "rb");
+            FILE *ind = fopen(indname, "rb+");
             if (bin == NULL || ind == NULL){
                 printf("Falha no processamento do arquivo.\n");
                 free(tipo);
@@ -647,7 +693,143 @@ int main(void){
         /* Funcionalidade 8:
         atualizacao de registros de um arquivo de dados */
         case 8:{
+            char *tipo, *binname, *indname;
+            int nAtualizacoes;
+            scanf("%ms %ms %ms %d", &tipo, &binname, &indname, &nAtualizacoes);
+            FILE *bin = fopen(binname, "rb+");
+            FILE *ind = fopen(indname, "rb+");
+            if (bin == NULL || ind == NULL){
+                printf("Falha no processamento do arquivo.\n");
+                free(tipo);
+                free(binname);
+                free(indname);
+                if (bin != NULL) fclose(bin);
+                if (ind != NULL) fclose(ind);
+                break;
+            }
 
+            char status;
+            fread(&status, sizeof(char), 1, ind);
+
+            // se tipo selecionado for "tipo1"
+            if (strcmp(tipo, "tipo1") == 0){
+                // verificacao dos status dos arquivos
+                cabecalho rc = ler_cabecalho(bin, '1');
+                if (rc.status == '0' || status == '0'){
+                    printf("Falha no processamento do arquivo.\n");
+                    free(tipo);
+                    free(binname);
+                    free(indname);
+                    fclose(bin);
+                    fclose(ind);
+                    break;
+                }
+
+                while (nAtualizacoes--){
+                    veiculo filtro = {-1, -1, -1, "$$", NULL, NULL, NULL}; // criterios de busca
+                    veiculo valores = {-1, -1, -1, "$$", NULL, NULL, NULL}; // valores que devem ser atualizados
+                    veiculo campos = {-1, -1, -1, "$$", NULL, NULL, NULL}; // indica os campos que devem ser atualizados
+
+                    int nCamposBusca, nCamposAtualiza;
+                    scanf("%d ", &nCamposBusca);
+                    while (nCamposBusca--){
+                        ler_campo(&filtro);
+                    }
+                    scanf("%d ", &nCamposAtualiza);
+                    while (nCamposAtualiza--){
+                        ler_novo_campo(&valores, &campos);
+                    }
+
+                    int qtd_ind;
+                    Indice *indices = ler_indices(ind, &qtd_ind, '1');
+                    long int cur, next;
+                    while (cur = buscar_veiculo(bin, indices, qtd_ind, filtro, tipo[4], &next), cur != -1){
+                        fseek(bin, cur + 5, SEEK_SET);
+                        veiculo v = ler_veiculo(bin, 97);
+                        mostrar_veiculo(v);
+                        atualizar_veiculo_1(&v, &valores, &campos);
+                        fseek(bin, cur + 5, SEEK_SET);
+                        escrever_veiculo(v, bin);
+
+                        // preencher resto do registro com lixo
+                        char lixo = '$';
+                        int tamRegistro = 1 + 4 + calcular_tamanho(v);
+                        while (tamRegistro < 97){
+                            fwrite(&lixo, sizeof(char), 1, bin);
+                            tamRegistro++;
+                        }
+
+                        desalocar_veiculo(v);
+                    }
+
+                    desalocar_veiculo(filtro);
+                    desalocar_veiculo(valores);
+                    desalocar_veiculo(campos);
+                }
+
+            }
+            // se tipo selecionado for "tipo2"
+            else if (strcmp(tipo, "tipo2") == 0){
+                // verificacao dos status dos arquivos
+                cabecalho rc = ler_cabecalho(bin, '2');
+                if (rc.status == '0' || status == '0'){
+                    printf("Falha no processamento do arquivo.\n");
+                    free(tipo);
+                    free(binname);
+                    free(indname);
+                    fclose(bin);
+                    fclose(ind);
+                    break;
+                }
+
+                while (nAtualizacoes--){
+                    veiculo filtro = {-1, -1, -1, "$$", NULL, NULL, NULL}; // criterios de busca
+                    veiculo valores = {-1, -1, -1, "$$", NULL, NULL, NULL}; // valores que devem ser atualizados
+                    veiculo campos = {-1, -1, -1, "$$", NULL, NULL, NULL}; // indica os campos que devem ser atualizados
+
+                    int nCamposBusca, nCamposAtualiza;
+                    scanf("%d ", &nCamposBusca);
+                    while (nCamposBusca--){
+                        ler_campo(&filtro);
+                    }
+                    scanf("%d ", &nCamposAtualiza);
+                    while (nCamposAtualiza--){
+                        ler_novo_campo(&valores, &campos);
+                    }
+
+                    // nao fiz nada aqui direito
+                    int qtd_ind;
+                    Indice *indices = ler_indices(ind, &qtd_ind, '2');
+                    long int cur, next;
+                    while (cur = buscar_veiculo(bin, indices, qtd_ind, filtro, tipo[4], &next), cur != -1){
+                        fseek(bin, cur + 5, SEEK_SET);
+                        // acho que tem que ler removido, ler tam, pular prox, e ai ler veiculo com o tamanho - 8
+                        veiculo v = ler_veiculo(bin, 97);
+                        mostrar_veiculo(v);
+                        // deve funcionar
+                        atualizar_veiculo_1(&v, &valores, &campos);
+                        // if novotamanho <= tamanho : escreve ai mesmo
+                        // else remocao + insercao
+                        fseek(bin, cur + 5, SEEK_SET);
+                        escrever_veiculo(v, bin);
+
+                        // preencher resto do registro com lixo -- talvez tenha isos mesmo se inserir aqui
+                        char lixo = '$';
+                        int tamRegistro = 1 + 4 + calcular_tamanho(v);
+                        while (tamRegistro < 97){
+                            fwrite(&lixo, sizeof(char), 1, bin);
+                            tamRegistro++;
+                        }
+
+                        desalocar_veiculo(v);
+                    }
+
+                    desalocar_veiculo(filtro);
+                    desalocar_veiculo(valores);
+                    desalocar_veiculo(campos);
+                }
+
+            }
         }
         break;
     }

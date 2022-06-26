@@ -39,6 +39,8 @@ veiculo ler_veiculo_csv(FILE *stream);
 retorna offset (em relacao a posicao atual de leitura) para o proximo registro do arquivo binario    
 parametros: ponteiro para arquivo, veiculo com criterios de busca, tipo do arquivo, 
             veiculo a ser lido (passado por referencia) */
-int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v);
+long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int *next);
 
 veiculo ler_novo_veiculo(FILE *stream);
+long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, char tipo, long int *next);
+void atualizar_veiculo_1(veiculo *v, veiculo *valores, veiculo *campos);
