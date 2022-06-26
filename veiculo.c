@@ -3,6 +3,7 @@
 #include <string.h>
 #include "veiculo.h"
 #include "utils.h"
+#include "indice.h"
 
 void mostrar_veiculo(veiculo v){
     printf("MARCA DO VEICULO: %s\n", v.marca == NULL ? "NAO PREENCHIDO" : v.marca);
@@ -149,7 +150,9 @@ veiculo ler_veiculo_csv(FILE *stream){
     return v;
 }
 
-int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
+long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int *next){
+    long int inicio = ftell(stream);
+
     // guarda o tamanho dos bytes lidos do registro ate o momento
     int lido = 0;
     // guarda o tamanho total do registro em bytes
@@ -162,7 +165,10 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     if(tipo == '1'){
         // para o tipo1 os registros tem sempre 97 bytes
         tamRegistro = 97;
-        if(removido == '1') return tamRegistro - lido;
+        if(removido == '1'){
+            *next = tamRegistro - lido;
+            return -1;
+        }
         // ignora o campo de proximo arquivo removido ja que nao lidaremos com
         // arquivos removidos
         fseek(stream, 4, SEEK_CUR);
@@ -177,7 +183,10 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
         // removido mas o funcionamento dessa funcao requer que sejam levados
         // em consideracao todos os bytes do registro portanto somamos 5
         tamRegistro += 5;
-        if(removido == '1') return tamRegistro - lido;
+        if(removido == '1'){
+            *next = tamRegistro - lido;
+            return -1;
+        }
         // para o tipo2 o campo de proximo arquivo removido e um long int
         fseek(stream, 8, SEEK_CUR);
         lido += 8;
@@ -185,18 +194,30 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     fread(&v->id, 4, 1, stream);
     lido += 4;
     // se o filtro exigir o campo id compara o id do registro com o do filtro
-    if((f.id != -1) && (v->id != f.id)) return tamRegistro - lido;
+    if((f.id != -1) && (v->id != f.id)){
+        *next = tamRegistro - lido;
+        return -1;
+    }
     fread(&v->ano, 4, 1, stream);
     lido += 4;
     // se o filtro exigir o campo ano compara o ano do registro com o do filtro
-    if((f.ano != -1) && (v->ano != f.ano)) return tamRegistro - lido;
+    if((f.ano != -1) && (v->ano != f.ano)){
+        *next = tamRegistro - lido;
+        return -1;
+    }
     fread(&v->qtt, 4, 1, stream);
     lido += 4;
     // se o filtro exigir o campo qtt compara o qtt do registro com o do filtro
-    if((f.qtt != -1) && (v->qtt != f.qtt)) return tamRegistro - lido;
+    if((f.qtt != -1) && (v->qtt != f.qtt)){
+        *next = tamRegistro - lido;
+        return -1;
+    }
     lido += fread(v->sigla, 1, 2, stream);
     // se o filtro exigir o campo sigla compara a do registro com a do filtro
-    if(strncmp(f.sigla, "$$", 2) && strncmp(v->sigla, f.sigla, 2)) return tamRegistro - lido;
+    if(strncmp(f.sigla, "$$", 2) && strncmp(v->sigla, f.sigla, 2)){
+        *next = tamRegistro - lido;
+        return -1;
+    }
 
     // campos de tamanho variavel
     v->cidade = NULL;
@@ -204,16 +225,27 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     v->modelo = NULL;
     // se tiver chegado ao final do registro checa se o filtro exige algum dos
     // campos que ainda nao foram lidos
-    if((lido >= tamRegistro) && (f.cidade || f.marca || f.modelo)) return tamRegistro - lido;
+    if((lido >= tamRegistro) && (f.cidade || f.marca || f.modelo)){
+        *next = tamRegistro - lido;
+        return -1;
+    }
     char c = fgetc(stream);
-    if((ungetc(c, stream) == '$') && (f.cidade || f.marca || f.modelo)) return tamRegistro - lido;
+    if((ungetc(c, stream) == '$') && (f.cidade || f.marca || f.modelo)){
+        *next = tamRegistro - lido;
+        return -1;
+    }
     // guarda o tamanho do proximo campo variavel em bytes
     int tam;
-    fread(&tam, 4, 1, stream);
-    lido += 4;
     // guarda o tipo do proximo campo variavel
     char codigo;
-    lido += fread(&codigo, 1, 1, stream);
+    if(lido >= tamRegistro){
+        codigo = -1;
+    }
+    else{
+        fread(&tam, 4, 1, stream);
+        lido += 4;
+        lido += fread(&codigo, 1, 1, stream);
+    }
     // codigo 0 se refere ao campo cidade
     if(codigo == '0'){
         // aloca 1 byte a mais que o tamanho informado para o \0
@@ -223,53 +255,120 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
         // se o filtro exigir o campo cidade compara com o do registro
         // se tiver chegado ao final do registro checa se o filtro exige algum
         // dos campos que ainda nao foram lidos
-        if((f.cidade && strcmp(v->cidade, f.cidade)) || ((lido >= tamRegistro) && (f.marca || f.modelo))) return tamRegistro - lido;
+        if((f.cidade && strcmp(v->cidade, f.cidade)) || ((lido >= tamRegistro) && (f.marca || f.modelo))){
+            *next = tamRegistro - lido;
+            return -1;
+        }
         char c = fgetc(stream);
-        if((ungetc(c, stream) == '$') && (f.marca || f.modelo)) return tamRegistro - lido;
+        if((ungetc(c, stream) == '$') && (f.marca || f.modelo)){
+            *next = tamRegistro - lido;
+            return -1;
+        }
         // como o campo cidade foi lido passa para o proximo campo
-        fread(&tam, 4, 1, stream);
-        lido += 4;
-        lido += fread(&codigo, 1, 1, stream);
+        if(lido >= tamRegistro){
+            codigo = -1;
+        }
+        else{
+            fread(&tam, 4, 1, stream);
+            lido += 4;
+            lido += fread(&codigo, 1, 1, stream);
+        }
     }
     else{
         // se nao houver campo cidade checa se o filtro exige esse campo
-        if(f.cidade) return tamRegistro - lido;
+        if(f.cidade){
+            *next = tamRegistro - lido;
+            return -1;
+        }
     }
     // codigo 1 se refere ao campo marca
     if(codigo == '1'){                                                                                                     
         v->marca = malloc(tam + 1);
         lido += fread(v->marca, 1, tam, stream);
         v->marca[tam] = '\0';
-        if((f.marca && strcmp(v->marca, f.marca)) || ((lido >= tamRegistro) && f.modelo)) return tamRegistro - lido;
+        if((f.marca && strcmp(v->marca, f.marca)) || ((lido >= tamRegistro) && f.modelo)){
+            *next = tamRegistro - lido;
+            return -1;
+        }
         char c = fgetc(stream);
-        if((ungetc(c, stream) == '$') && f.modelo) return tamRegistro - lido;
-        fread(&tam, 4, 1, stream);
-        lido += 4;
-        lido += fread(&codigo, 1, 1, stream);
+        if((ungetc(c, stream) == '$') && f.modelo){
+            *next = tamRegistro - lido;
+            return -1;
+        }
+        if(lido >= tamRegistro){
+            codigo = -1;
+        }
+        else{
+            fread(&tam, 4, 1, stream);
+            lido += 4;
+            lido += fread(&codigo, 1, 1, stream);
+        }
     }
     else{
-        if(f.marca) return tamRegistro - lido;
+        if(f.marca){
+            *next = tamRegistro - lido;
+            return -1;
+        }
     }
     // codigo 2 se refere ao campo modelo
     if(codigo == '2'){
         v->modelo = malloc(tam + 1);
         lido += fread(v->modelo, 1, tam, stream);
         v->modelo[tam] = '\0';
-        if(f.modelo && strcmp(v->modelo, f.modelo)) return tamRegistro - lido;
+        if(f.modelo && strcmp(v->modelo, f.modelo)){
+            *next = tamRegistro - lido;
+            return -1;
+        }
     }
     else{
-        if(f.modelo) return tamRegistro - lido;
+        if(f.modelo){
+            *next = tamRegistro - lido;
+            return -1;
+        }
     }
-    
-    mostrar_veiculo(*v);
-    return tamRegistro - lido;
+    *next = tamRegistro - lido;
+    return inicio;
 }
 
-/*
-int buscar_veiculo(FILE *stream, Indice *indices, int qtd_ind, veiculo f, char tipo){
+long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, char tipo, long int *next){
+    indices = (Indice*)indices;
     if (f.id != -1){
         int pos = busca_indices(indices, 0, qtd_ind, f.id);
-
+        if(pos == -1) return -1;
+        switch(tipo){
+            case '1':{
+                long offset = 182 + ((Indice*)indices)[pos].RRN * 97;
+                long cur = ftell(stream);
+                fseek(stream, offset, SEEK_SET);
+                veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
+                long filtro = filtrarVeiculo(stream, f, tipo, &v, next);
+                desalocar_veiculo(v);
+                fseek(stream, cur, SEEK_SET);
+                return filtro;
+            }
+            break;
+            case '2':{
+                long offset = ((Indice*)indices)[pos].byteOffset;
+                long cur = ftell(stream);
+                fseek(stream, offset, SEEK_SET);
+                veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
+                long filtro = filtrarVeiculo(stream, f, tipo, &v, next);
+                desalocar_veiculo(v);
+                fseek(stream, cur, SEEK_SET);
+                return filtro;
+            }
+            break;
+        }
     }
-
-}*/
+    
+    char c;
+    while ((c = fgetc(stream)) != EOF){
+        ungetc(c, stream);
+        veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
+        long int cur = filtrarVeiculo(stream, f, tipo, &v, next);
+        desalocar_veiculo(v);
+        if(cur != -1) return cur;
+        if (*next) fseek(stream, *next, SEEK_CUR);
+    }
+    return -1;
+}

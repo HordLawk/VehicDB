@@ -4,13 +4,13 @@
 
 void escrever_cabecalho(cabecalho c, FILE *stream, char tipo){
     fwrite(&c.status, 1, 1, stream);
-    fwrite(c.descricao, 1, 40, stream);
 
     if (tipo == '1')
         fwrite(&c.topo1, 4, 1, stream);
     else
         fwrite(&c.topo2, 8, 1, stream);
 
+    fwrite(c.descricao, 1, 40, stream);
     fwrite(c.desC1, 1, 22, stream);
     fwrite(c.desC2, 1, 19, stream);
     fwrite(c.desC3, 1, 24, stream);
