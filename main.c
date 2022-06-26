@@ -643,6 +643,7 @@ int main(void){
             ind = fopen(indname, "wb");
             funcionalidade_5(bin, ind, tipo);
             fclose(bin);
+            fclose(ind);
             binarioNaTela(binname);
             binarioNaTela(indname);
         }
