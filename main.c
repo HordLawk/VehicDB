@@ -504,7 +504,7 @@ int main(void){
             }
 
             // printf("quantidade de indices: %d\n", qtd_ind);
-            mostrar_indices(indices, qtd_ind, '1');
+            // mostrar_indices(indices, qtd_ind, '1');
             long int inicio = ftell(bin);
             while (nRemocoes--){
                 fseek(bin, inicio, SEEK_SET);
@@ -628,8 +628,10 @@ int main(void){
             fseek(bin, 0, SEEK_SET);
             // printf("topo final: %d\n", rc.topo1);
             escrever_cabecalho(rc, bin, tipo[4]);
-            fclose(bin);
             fclose(ind);
+            ind = fopen(indname, "wb");
+            funcionalidade_5(bin, ind, tipo);
+            fclose(bin);
             binarioNaTela(binname);
             binarioNaTela(indname);
         }

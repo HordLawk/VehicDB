@@ -4,7 +4,6 @@
 #include "veiculo.h"
 #include "indice.h"
 #include "utils.h"
-#include "indice.h"
 
 void mostrar_veiculo(veiculo v){
     printf("MARCA DO VEICULO: %s\n", v.marca == NULL ? "NAO PREENCHIDO" : v.marca);
