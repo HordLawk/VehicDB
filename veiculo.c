@@ -265,11 +265,41 @@ int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v){
     return tamRegistro - lido;
 }
 
-/*
-int buscar_veiculo(FILE *stream, Indice *indices, int qtd_ind, veiculo f, char tipo){
-    if (f.id != -1){
-        int pos = busca_indices(indices, 0, qtd_ind, f.id);
+veiculo ler_novo_veiculo(FILE *stream){
+    veiculo v;
+    v.cidade = NULL;
+    v.marca = NULL;
+    v.modelo = NULL;
 
-    }
+    char *id, *ano, *qtt, *sigla, *cidade, *marca, *modelo;
+    fscanf(stream, "%ms", &id);
+    fscanf(stream, "%ms", &ano);
+    fscanf(stream, "%ms", &qtt);
+    sigla = scan_quote_string();
+    cidade = scan_quote_string();
+    marca = scan_quote_string();
+    modelo = scan_quote_string();
 
-}*/
+    v.id = (strcmp(id, "NULO") == 0) ? -1 : atoi(id);
+    v.ano = (strcmp(ano, "NULO") == 0) ? -1 : atoi(ano);
+    v.qtt = (strcmp(qtt, "NULO") == 0) ? -1 : atoi(qtt);
+
+
+    if (strcmp(sigla, "") == 0) strncpy(v.sigla, "$$", 2);
+    else strncpy(v.sigla, sigla, 2);
+
+    if (strcmp(cidade, "") != 0) v.cidade = cidade;
+    else free(cidade);
+
+    if (strcmp(marca, "") != 0) v.marca = marca;
+    else free(marca);
+
+    if (strcmp(modelo, "") != 0) v.modelo = modelo;
+    else free(modelo);
+
+    free(id);
+    free(ano);
+    free(qtt);
+    free(sigla);
+    return v;
+}
