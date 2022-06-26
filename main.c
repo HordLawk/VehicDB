@@ -973,7 +973,7 @@ int main(void){
                         // printf("setimo\n");
                         fseek(bin, 8, SEEK_CUR);
                         // printf("oitavo\n");
-                        veiculo v = ler_veiculo(bin, tam);
+                        veiculo v = ler_veiculo(bin, tam - 8);
                         // printf("nono\n");
                         // mostrar_veiculo(v);
                         // deve funcionar
