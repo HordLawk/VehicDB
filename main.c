@@ -7,6 +7,8 @@
 #include "indice.h"
 
 #define TAM_TIPO1 97
+#define TAM_CAB1 182
+#define TAM_CAB2 190
 
 void ler_campo(veiculo *f){
     char *campo;
@@ -112,7 +114,7 @@ int main(void){
             // registro de cabecalho inicial
             cabecalho rc = {'0', '0', '1', '2',
                             -1, 0, 0,
-                            -1, 190,
+                            -1, TAM_CAB2,
                             "LISTAGEM DA FROTA DOS VEICULOS NO BRASIL",
                             "CODIGO IDENTIFICADOR: ",
                             "ANO DE FABRICACAO: ",
@@ -150,9 +152,6 @@ int main(void){
                     rc.proxRRN += 1;
                     desalocar_veiculo(v);
                 }
-                // atualizacao do cabecalho no arquivo binario
-                fseek(bin, 174, SEEK_SET);
-                fwrite(&rc.proxRRN, sizeof(int), 1, bin);
             }
             // se tipo selecionado for "tipo2"
             else if (strcmp(tipo, "tipo2") == 0){
@@ -176,14 +175,11 @@ int main(void){
 
                     rc.proxByteOffset += sizeof(char) + sizeof(int) + tamRegistro;
                 }
-                // atualizacao do cabecalho no arquivo binario
-                fseek(bin, 178, SEEK_SET);
-                fwrite(&rc.proxByteOffset, sizeof(long), 1, bin);
             }
             // atualizacao do cabecalho no arquivo binario
             rc.status = '1';
             fseek(bin, 0, SEEK_SET);
-            fwrite(&rc.status, sizeof(char), 1, bin);
+            escrever_cabecalho(rc, bin, tipo[4]);
 
             fclose(csv);
             fclose(bin);
@@ -408,6 +404,7 @@ int main(void){
                 fclose(ind);
                 break;
             }
+            // execucao da funcionalidade
             criar_arquivo_indices(bin, ind, tipo);
 
             fclose(bin);
@@ -431,31 +428,31 @@ int main(void){
                 break;
             }
 
-            // verificacao dos status e leitura dos indices
-            int qtd_ind = -1;
-            Indice *indices = NULL;
+            // verificacao dos status dos arquivos
+            char status;
+            fread(&status, sizeof(char), 1, ind);
             cabecalho rc = ler_cabecalho(bin, tipo[4]);
-            if (strcmp(tipo, "tipo1") == 0){
-                if (rc.status == '0'){
-                    printf("Falha no processamento do arquivo.\n");
-                    fclose(bin);
-                    fclose(ind);
-                    break;
-                }
-                indices = ler_indices(ind, &qtd_ind, '1');
-            } 
-            else if (strcmp(tipo, "tipo2") == 0){
-                if (rc.status == '0'){
-                    printf("Falha no processamento do arquivo.\n");
-                    fclose(bin);
-                    fclose(ind);
-                    break;
-                }
-                indices = ler_indices(ind, &qtd_ind, '2');
+            if (rc.status == '0' || status == '0'){
+                printf("Falha no processamento do arquivo.\n");
+                fclose(bin);
+                fclose(ind);
+                break;
             }
+            // indicar que arquivos de dados estao sendo alterados
+            status = '0';
+            fseek(ind, 0, SEEK_SET);
+            fwrite(&status, sizeof(char), 1, ind);
+            fseek(bin, 0, SEEK_SET);
+            fwrite(&status, sizeof(char), 1, bin);
+
+            // leitura dos indices
+            int qtd_ind = -1;
+            Indice *indices = ler_indices(ind, &qtd_ind, tipo[4]);
 
             // remocoes - por favor comentar
-            long int inicio = ftell(bin);
+            long int inicio;
+            if (tipo[4] == '1') inicio = TAM_CAB1;
+            else if (tipo[4] == '2') inicio = TAM_CAB2;
             while (nRemocoes--){
                 fseek(bin, inicio, SEEK_SET);
                 int nCampos;
@@ -480,11 +477,17 @@ int main(void){
                 }
                 
             }
-            fseek(bin, 0, SEEK_SET);
-            escrever_cabecalho(rc, bin, tipo[4]);
+            // atualizar arquivo de indices
+            if (tipo[4] == '1') fseek(bin, TAM_CAB1, SEEK_SET);
+            else if (tipo[4] == '2') fseek(bin, TAM_CAB2, SEEK_SET);
             fclose(ind);
             ind = fopen(indname, "wb");
             criar_arquivo_indices(bin, ind, tipo);
+
+            // atualizar cabecalho do registro de dados
+            fseek(bin, 0, SEEK_SET);
+            escrever_cabecalho(rc, bin, tipo[4]);
+
             fclose(bin);
             fclose(ind);
             binarioNaTela(binname);
@@ -507,26 +510,25 @@ int main(void){
                 break;
             }
 
+            // verificacao dos status dos arquivos
             char status;
             fread(&status, sizeof(char), 1, ind);
+            cabecalho rc = ler_cabecalho(bin, tipo[4]);
+            if (rc.status == '0' || status == '0'){
+                printf("Falha no processamento do arquivo.\n");
+                fclose(bin);
+                fclose(ind);
+                break;
+            }
+            // indicar que arquivos de dados estao sendo alterados
+            status = '0';
+            fseek(ind, 0, SEEK_SET);
+            fwrite(&status, sizeof(char), 1, ind);
+            fseek(bin, 0, SEEK_SET);
+            fwrite(&status, sizeof(char), 1, bin);
+
             // se tipo selecionado for "tipo1"
             if (strcmp(tipo, "tipo1") == 0){
-                // verificacao dos status dos arquivos
-                cabecalho rc = ler_cabecalho(bin, '1');
-                if (rc.status == '0' || status == '0'){
-                    printf("Falha no processamento do arquivo.\n");
-                    fclose(bin);
-                    fclose(ind);
-                    break;
-                }
-
-                // indicar que arquivos de dados estao sendo alterados
-                status = '0';
-                fseek(ind, 0, SEEK_SET);
-                fwrite(&status, sizeof(char), 1, ind);
-                fseek(bin, 0, SEEK_SET);
-                fwrite(&status, sizeof(char), 1, bin);
-
                 // leitura e insercao dos veiculos
                 while (nInsercoes--){
                     veiculo v = ler_novo_veiculo(stdin);
@@ -535,7 +537,7 @@ int main(void){
                     int prox = -1;
                     // nao existem registros removidos -> inserir no prox RRN disponivel
                     if (rc.topo1 == -1){
-                        fseek(bin, 182 + (rc.proxRRN * TAM_TIPO1), SEEK_SET);
+                        fseek(bin, TAM_CAB1 + (rc.proxRRN * TAM_TIPO1), SEEK_SET);
                         fwrite(&removido, sizeof(char), 1, bin);
                         fwrite(&prox, sizeof(int), 1, bin);
                         escrever_veiculo(v, bin);
@@ -543,7 +545,7 @@ int main(void){
                     }
                     // existe registro removido -> inserir no RRN topo da pilha de removidos
                     else{
-                        fseek(bin, 182 + (rc.topo1 * TAM_TIPO1), SEEK_SET);
+                        fseek(bin, TAM_CAB1 + (rc.topo1 * TAM_TIPO1), SEEK_SET);
                         fwrite(&removido, sizeof(char), 1, bin);
                         fread(&rc.topo1, sizeof(int), 1, bin); // novo topo: proximo do topo atual
                         fseek(bin, 0 - sizeof(int), SEEK_CUR);
@@ -562,52 +564,27 @@ int main(void){
 
                     desalocar_veiculo(v);
                 }
-
-                // atualizar arquivo de indices
-                fseek(bin, 182, SEEK_SET);
-                fclose(ind);
-                ind = fopen(indname, "wb");
-                criar_arquivo_indices(bin, ind, tipo);
-
-                // atualizar cabecalho do registro de dados
-                fseek(bin, 0, SEEK_SET);
-                escrever_cabecalho(rc, bin, '1');
+                fseek(bin, TAM_CAB1, SEEK_SET); // ponteiro no inicio dos registros
             } 
             // se tipo selecionado for "tipo2"
             else if (strcmp(tipo, "tipo2") == 0){
-                 // verificacao dos status dos arquivos
-                cabecalho rc = ler_cabecalho(bin, '2');
-                if (rc.status == '0' || status == '0'){
-                    printf("Falha no processamento do arquivo.\n");
-                    fclose(bin);
-                    fclose(ind);
-                    break;
-                }
-
-                // indicar que arquivos de dados estao sendo alterados
-                status = '0';
-                fseek(ind, 0, SEEK_SET);
-                fwrite(&status, sizeof(char), 1, ind);
-                fseek(bin, 0, SEEK_SET);
-                fwrite(&status, sizeof(char), 1, bin);
-
                 // leitura e insercao dos veiculos
                 while (nInsercoes--){
                     veiculo v = ler_novo_veiculo(stdin);
                     inserir_veiculo(&rc, bin, v);
                     desalocar_veiculo(v);
                 }
-
-                // atualizar arquivo de indices
-                fseek(bin, 190, SEEK_SET);
-                fclose(ind);
-                ind = fopen(indname, "wb");
-                criar_arquivo_indices(bin, ind, tipo);
-
-                // atualizar cabecalho do registro de dados
-                fseek(bin, 0, SEEK_SET);
-                escrever_cabecalho(rc, bin, '2');
+                fseek(bin, TAM_CAB2, SEEK_SET); // ponteiro no inicio dos registros
             }
+
+            // atualizar arquivo de indices
+            fclose(ind);
+            ind = fopen(indname, "wb");
+            criar_arquivo_indices(bin, ind, tipo);
+
+            // atualizar cabecalho do registro de dados
+            fseek(bin, 0, SEEK_SET);
+            escrever_cabecalho(rc, bin, tipo[4]);
 
             fclose(bin);
             fclose(ind);
@@ -619,6 +596,7 @@ int main(void){
         /* Funcionalidade 8:
         atualizacao de registros de um arquivo de dados */
         case 8:{
+            // leitura do comando e abertura dos arquivos
             int nAtualizacoes;
             scanf("%ms %ms %ms %d", &tipo, &binname, &indname, &nAtualizacoes);
             FILE *bin = fopen(binname, "rb+");
@@ -630,27 +608,37 @@ int main(void){
                 break;
             }
 
+            // verificacao dos status dos arquivos
             char status;
             fread(&status, sizeof(char), 1, ind);
+            cabecalho rc = ler_cabecalho(bin, tipo[4]);
+            if (rc.status == '0' || status == '0'){
+                printf("Falha no processamento do arquivo.\n");
+                fclose(bin);
+                fclose(ind);
+                break;
+            }
+            // indicar que arquivos de dados estao sendo alterados
+            status = '0';
+            fseek(ind, 0, SEEK_SET);
+            fwrite(&status, sizeof(char), 1, ind);
+            fseek(bin, 0, SEEK_SET);
+            fwrite(&status, sizeof(char), 1, bin);
+
+            // leitura dos indices
+            int qtd_ind;
+            Indice *indices = ler_indices(ind, &qtd_ind, tipo[4]);
 
             // se tipo selecionado for "tipo1"
             if (strcmp(tipo, "tipo1") == 0){
-                // verificacao dos status dos arquivos
-                cabecalho rc = ler_cabecalho(bin, '1');
-                if (rc.status == '0' || status == '0'){
-                    printf("Falha no processamento do arquivo.\n");
-                    fclose(bin);
-                    fclose(ind);
-                    break;
-                }
-
-                long inicio = ftell(bin);
+                long inicio = TAM_CAB1;
                 while (nAtualizacoes--){
                     fseek(bin, inicio, SEEK_SET);
                     veiculo filtro = {-1, -1, -1, "$$", NULL, NULL, NULL}; // criterios de busca
                     veiculo valores = {-1, -1, -1, "$$", NULL, NULL, NULL}; // valores que devem ser atualizados
                     veiculo campos = {-1, -1, -1, "$$", NULL, NULL, NULL}; // indica os campos que devem ser atualizados
 
+                    // leitura das atualizacoes
                     int nCamposBusca, nCamposAtualiza;
                     scanf("%d ", &nCamposBusca);
                     while (nCamposBusca--){
@@ -660,10 +648,6 @@ int main(void){
                     while (nCamposAtualiza--){
                         ler_novo_campo(&valores, &campos);
                     }
-
-                    int qtd_ind;
-                    fseek(ind, 0, SEEK_SET);
-                    Indice *indices = ler_indices(ind, &qtd_ind, '1');
 
                     long int cur, next;
                     while (cur = buscar_veiculo(bin, indices, qtd_ind, filtro, tipo[4], &next), cur != -1){
@@ -685,35 +669,15 @@ int main(void){
                         desalocar_veiculo(v);
                         if(filtro.id != -1) break;
                     }
-
                     desalocar_veiculo(filtro);
                     desalocar_veiculo(valores);
                     desalocar_veiculo(campos);
                 }
-
-                // atualizar arquivo de indices
-                fseek(bin, 182, SEEK_SET);
-                fclose(ind);
-                ind = fopen(indname, "wb");
-                criar_arquivo_indices(bin, ind, tipo);
-
-                fclose(bin);
-                fclose(ind);
-                binarioNaTela(binname);
-                binarioNaTela(indname);
+                fseek(bin, TAM_CAB1, SEEK_SET); // ponteiro no inicio dos registros
             }
             // se tipo selecionado for "tipo2"
             else if (strcmp(tipo, "tipo2") == 0){
-                // verificacao dos status dos arquivos
-                cabecalho rc = ler_cabecalho(bin, '2');
-                if (rc.status == '0' || status == '0'){
-                    printf("Falha no processamento do arquivo.\n");
-                    fclose(bin);
-                    fclose(ind);
-                    break;
-                }
-
-                long inicio = ftell(bin);
+                long inicio = TAM_CAB2;
                 while (nAtualizacoes--){
                     fseek(bin, inicio, SEEK_SET);
                     veiculo filtro = {-1, -1, -1, "$$", NULL, NULL, NULL}; // criterios de busca
@@ -730,10 +694,6 @@ int main(void){
                         ler_novo_campo(&valores, &campos);
                     }
 
-                    int qtd_ind;
-                    fseek(ind, 0, SEEK_SET);
-
-                    Indice *indices = ler_indices(ind, &qtd_ind, '2');
                     long int cur, next;
                     while (cur = buscar_veiculo(bin, indices, qtd_ind, filtro, tipo[4], &next), cur != -1){
                         long end = ftell(bin);
@@ -746,14 +706,14 @@ int main(void){
 
                         veiculo v = ler_veiculo(bin, tam - sizeof(long));
                         atualizar_veiculo_1(&v, &valores, &campos);
-                        int tamreg = calcular_tamanho(v) + sizeof(long);
-                        if(tamreg <= tam){
+                        int tamRegistro = calcular_tamanho(v) + sizeof(long);
+                        if(tamRegistro <= tam){
                             fseek(bin, cur + sizeof(char) + sizeof(int) + sizeof(long), SEEK_SET);
                             escrever_veiculo(v, bin);
                             char lixo = '$';
-                            while (tamreg < tam){
+                            while (tamRegistro < tam){
                                 fwrite(&lixo, sizeof(char), 1, bin);
-                                tamreg += sizeof(char);
+                                tamRegistro += sizeof(char);
                             }
                         }
                         else{
@@ -765,28 +725,26 @@ int main(void){
                         if(filtro.id != -1) break;
                         fseek(bin, end + next, SEEK_SET);
                     }
-                    // printf("decimo\n");
-
                     desalocar_veiculo(filtro);
                     desalocar_veiculo(valores);
                     desalocar_veiculo(campos);
                 }
-
-                // atualizar arquivo de indices
-                fseek(bin, 190, SEEK_SET);
-                fclose(ind);
-                ind = fopen(indname, "wb");
-                criar_arquivo_indices(bin, ind, tipo);
-
-                // atualizar cabecalho do registro de dados
-                fseek(bin, 0, SEEK_SET);
-                escrever_cabecalho(rc, bin, '2');
-
-                fclose(bin);
-                fclose(ind);
-                binarioNaTela(binname);
-                binarioNaTela(indname);
+                fseek(bin, TAM_CAB2, SEEK_SET); // ponteiro no inicio dos registros
             }
+
+            // atualizar arquivo de indices
+            fclose(ind);
+            ind = fopen(indname, "wb");
+            criar_arquivo_indices(bin, ind, tipo);
+
+            // atualizar cabecalho do registro de dados
+            fseek(bin, 0, SEEK_SET);
+            escrever_cabecalho(rc, bin, tipo[4]);
+
+            fclose(bin);
+            fclose(ind);
+            binarioNaTela(binname);
+            binarioNaTela(indname);
         }
         break;
     }

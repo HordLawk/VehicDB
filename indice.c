@@ -20,14 +20,6 @@ void escrever_indices(Indice *indices, int qtd, FILE *stream, char tipo){
 }
 
 Indice *ler_indices(FILE *stream, int *qtd, char tipo){
-    // verificacao do arquivo
-    char status;
-    fread(&status, sizeof(char), 1, stream);
-    if (status == '0'){
-        printf("Falha no processamento do arquivo.\n");
-        return NULL;
-    }
-
     // leitura dos indices
     Indice *indices = NULL;
     int qtd_ind = 0;
