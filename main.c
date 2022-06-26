@@ -504,7 +504,7 @@ int main(void){
             }
 
             // printf("quantidade de indices: %d\n", qtd_ind);
-            // mostrar_indices(indices, qtd_ind, '1');
+            // mostrar_indices(indices, qtd_ind, '2');
             long int inicio = ftell(bin);
             while (nRemocoes--){
                 fseek(bin, inicio, SEEK_SET);
@@ -525,7 +525,7 @@ int main(void){
                     // int max = 0;
                     while (cur != -1){
                         long end = ftell(bin);
-                        printf("next: %d\noffset: %ld\nend: %ld\n", next, cur, end);
+                        // printf("next: %d\noffset: %ld\nend: %ld\n", next, cur, end);
                         // fseek(bin2, cur + 5, SEEK_SET);
                         // mostrar_veiculo(ler_veiculo(bin2, 97));
                         fseek(bin, cur, SEEK_SET);
