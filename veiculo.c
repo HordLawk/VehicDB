@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "veiculo.h"
+#include "indice.h"
 #include "utils.h"
 #include "indice.h"
 
@@ -330,6 +331,44 @@ long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int
     return inicio;
 }
 
+veiculo ler_novo_veiculo(FILE *stream){
+    veiculo v;
+    v.cidade = NULL;
+    v.marca = NULL;
+    v.modelo = NULL;
+
+    char *id, *ano, *qtt, *sigla, *cidade, *marca, *modelo;
+    fscanf(stream, "%ms", &id);
+    fscanf(stream, "%ms", &ano);
+    fscanf(stream, "%ms", &qtt);
+    sigla = scan_quote_string();
+    cidade = scan_quote_string();
+    marca = scan_quote_string();
+    modelo = scan_quote_string();
+
+    v.id = (strcmp(id, "NULO") == 0) ? -1 : atoi(id);
+    v.ano = (strcmp(ano, "NULO") == 0) ? -1 : atoi(ano);
+    v.qtt = (strcmp(qtt, "NULO") == 0) ? -1 : atoi(qtt);
+
+    if (strcmp(sigla, "") == 0) strncpy(v.sigla, "$$", 2);
+    else strncpy(v.sigla, sigla, 2);
+
+    if (strcmp(cidade, "") != 0) v.cidade = cidade;
+    else free(cidade);
+
+    if (strcmp(marca, "") != 0) v.marca = marca;
+    else free(marca);
+
+    if (strcmp(modelo, "") != 0) v.modelo = modelo;
+    else free(modelo);
+
+    free(id);
+    free(ano);
+    free(qtt);
+    free(sigla);
+    return v;
+}
+
 long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, char tipo, long int *next){
     indices = (Indice*)indices;
     if (f.id != -1){
@@ -371,4 +410,23 @@ long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, cha
         if (*next) fseek(stream, *next, SEEK_CUR);
     }
     return -1;
+}
+
+void atualizar_veiculo_1(veiculo *v, veiculo *valores, veiculo *campos){
+    if (campos->id != -1)  v->id = valores->id;
+    if (campos->ano != -1) v->ano = valores->ano;
+    if (campos->qtt != -1) v->qtt = valores->qtt;
+    if (strncmp(campos->sigla, "$$", 2)) strncpy(v->sigla, valores->sigla, 2);
+    if (campos->cidade){
+        free(v->cidade);
+        strcpy(v->cidade, valores->cidade);
+    }
+    if (campos->marca){
+        free(v->marca);
+        strcpy(v->marca, valores->marca);
+    }
+    if (campos->modelo){
+        free(v->modelo);
+        strcpy(v->modelo, valores->modelo);
+    }
 }

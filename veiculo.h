@@ -41,4 +41,6 @@ parametros: ponteiro para arquivo, veiculo com criterios de busca, tipo do arqui
             veiculo a ser lido (passado por referencia) */
 long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int *next);
 
+veiculo ler_novo_veiculo(FILE *stream);
 long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, char tipo, long int *next);
+void atualizar_veiculo_1(veiculo *v, veiculo *valores, veiculo *campos);
