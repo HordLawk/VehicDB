@@ -1,6 +1,6 @@
 typedef struct Indice{
-    int id, RRN;
-    long byteOffset;
+    unsigned int id, RRN;
+    unsigned long byteOffset;
 } Indice;
 
 void escrever_indices(Indice *indices, int qtd, FILE *stream, char tipo);

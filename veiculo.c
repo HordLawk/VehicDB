@@ -4,6 +4,7 @@
 #include "veiculo.h"
 #include "indice.h"
 #include "utils.h"
+#include "indice.h"
 
 void mostrar_veiculo(veiculo v){
     printf("MARCA DO VEICULO: %s\n", v.marca == NULL ? "NAO PREENCHIDO" : v.marca);
@@ -236,11 +237,16 @@ long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int
     }
     // guarda o tamanho do proximo campo variavel em bytes
     int tam;
-    fread(&tam, 4, 1, stream);
-    lido += 4;
     // guarda o tipo do proximo campo variavel
     char codigo;
-    lido += fread(&codigo, 1, 1, stream);
+    if(lido >= tamRegistro){
+        codigo = -1;
+    }
+    else{
+        fread(&tam, 4, 1, stream);
+        lido += 4;
+        lido += fread(&codigo, 1, 1, stream);
+    }
     // codigo 0 se refere ao campo cidade
     if(codigo == '0'){
         // aloca 1 byte a mais que o tamanho informado para o \0
@@ -260,9 +266,14 @@ long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int
             return -1;
         }
         // como o campo cidade foi lido passa para o proximo campo
-        fread(&tam, 4, 1, stream);
-        lido += 4;
-        lido += fread(&codigo, 1, 1, stream);
+        if(lido >= tamRegistro){
+            codigo = -1;
+        }
+        else{
+            fread(&tam, 4, 1, stream);
+            lido += 4;
+            lido += fread(&codigo, 1, 1, stream);
+        }
     }
     else{
         // se nao houver campo cidade checa se o filtro exige esse campo
@@ -285,9 +296,14 @@ long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int
             *next = tamRegistro - lido;
             return -1;
         }
-        fread(&tam, 4, 1, stream);
-        lido += 4;
-        lido += fread(&codigo, 1, 1, stream);
+        if(lido >= tamRegistro){
+            codigo = -1;
+        }
+        else{
+            fread(&tam, 4, 1, stream);
+            lido += 4;
+            lido += fread(&codigo, 1, 1, stream);
+        }
     }
     else{
         if(f.marca){
@@ -311,7 +327,6 @@ long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int
             return -1;
         }
     }
-    
     *next = tamRegistro - lido;
     return inicio;
 }
@@ -361,11 +376,25 @@ long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, cha
         if(pos == -1) return -1;
         switch(tipo){
             case '1':{
-                return 182 + ((Indice*)indices)[pos].RRN * 97;
+                long offset = 182 + ((Indice*)indices)[pos].RRN * 97;
+                long cur = ftell(stream);
+                fseek(stream, offset, SEEK_SET);
+                veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
+                long filtro = filtrarVeiculo(stream, f, tipo, &v, next);
+                desalocar_veiculo(v);
+                fseek(stream, cur, SEEK_SET);
+                return filtro;
             }
             break;
             case '2':{
-                return 190 + ((Indice*)indices)[pos].byteOffset;
+                long offset = ((Indice*)indices)[pos].byteOffset;
+                long cur = ftell(stream);
+                fseek(stream, offset, SEEK_SET);
+                veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
+                long filtro = filtrarVeiculo(stream, f, tipo, &v, next);
+                desalocar_veiculo(v);
+                fseek(stream, cur, SEEK_SET);
+                return filtro;
             }
             break;
         }

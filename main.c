@@ -223,6 +223,7 @@ int main(void){
                     qtd++;
                     fseek(bin, 4, SEEK_CUR);
                     veiculo v = ler_veiculo(bin, 97 - 1 - 4);
+                    printf("%d\n", v.id);
                     mostrar_veiculo(v);
                     desalocar_veiculo(v);
                 }
@@ -332,15 +333,22 @@ int main(void){
             }
 
             char c;
+            char found = 0;
             while ((c = fgetc(bin)) != EOF){
                 ungetc(c, bin);
                 // ler e verificar se veiculo corresponde aos criterios de busca
                 veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
-                int next = filtrarVeiculo(bin, f, tipo[4], &v);
+                long int next;
+                long int cur = filtrarVeiculo(bin, f, tipo[4], &v, &next);
+                if(cur != -1){
+                    found = 1;
+                    mostrar_veiculo(v);
+                }
                 desalocar_veiculo(v);
                 // posicionar leitura do arquivo no proximo registro
                 if (next) fseek(bin, next, SEEK_CUR);
             }
+            if(!found) printf("Registro inexistente.\n");
 
             desalocar_veiculo(f);
             free(tipo);
@@ -454,7 +462,7 @@ int main(void){
             char *tipo, *binname, *indname;
             int nRemocoes;
             scanf("%ms %ms %ms %d", &tipo, &binname, &indname, &nRemocoes);
-            FILE *bin = fopen(binname, "rb");
+            FILE *bin = fopen(binname, "rb+");
             FILE *ind = fopen(indname, "rb");
             if (bin == NULL || ind == NULL){
                 printf("Falha no processamento do arquivo.\n");
@@ -469,8 +477,9 @@ int main(void){
             // verificacao dos status e leitura dos indices
             int qtd_ind = -1;
             Indice *indices = NULL;
+            cabecalho rc = ler_cabecalho(bin, tipo[4]);
+            // printf("topo inicial: %d\n", rc.topo1);
             if (strcmp(tipo, "tipo1") == 0){
-                cabecalho rc = ler_cabecalho(bin, '1');
                 if (rc.status == '0'){
                     printf("Falha no processamento do arquivo.\n");
                     free(tipo);
@@ -483,7 +492,6 @@ int main(void){
                 indices = ler_indices(ind, &qtd_ind, '1');
             } 
             else if (strcmp(tipo, "tipo2") == 0){
-                cabecalho rc = ler_cabecalho(bin, '2');
                 if (rc.status == '0'){
                     printf("Falha no processamento do arquivo.\n");
                     free(tipo);
@@ -495,9 +503,11 @@ int main(void){
                 indices = ler_indices(ind, &qtd_ind, '2');
             }
 
-            mostrar_indices(indices, qtd_ind, '2');
-
+            // printf("quantidade de indices: %d\n", qtd_ind);
+            mostrar_indices(indices, qtd_ind, '1');
+            long int inicio = ftell(bin);
             while (nRemocoes--){
+                fseek(bin, inicio, SEEK_SET);
                 int nCampos;
                 scanf("%d", &nCampos);
                 veiculo f = {-1, -1, -1, "$$", NULL, NULL, NULL};
@@ -505,15 +515,123 @@ int main(void){
                     ler_campo(&f);
                 }
 
+                long int next;
+                long int cur = buscar_veiculo(bin, indices, qtd_ind, f, tipo[4], &next);
+                // printf("offset: %ld\n", cur);
+                // FILE *bin2 = fopen(binname, "rb");
+                // fseek(bin2, cur + 5, SEEK_SET);
+                // mostrar_veiculo(ler_veiculo(bin2, 97));
+                if(f.id == -1){
+                    // int max = 0;
+                    while (cur != -1){
+                        long end = ftell(bin);
+                        printf("next: %d\noffset: %ld\nend: %ld\n", next, cur, end);
+                        // fseek(bin2, cur + 5, SEEK_SET);
+                        // mostrar_veiculo(ler_veiculo(bin2, 97));
+                        fseek(bin, cur, SEEK_SET);
+                        char rem = '1';
+                        fwrite(&rem, 1, 1, bin);
+                        if(tipo[4] == '1'){
+                            fwrite(&rc.topo1, 4, 1, bin);
+                            rc.topo1 = (cur - 182) / 97;
+                        }
+                        else if(tipo[4] == '2'){
+                            int tam;
+                            fread(&tam, 4, 1, bin);
+                            // printf("tamanho: %d\n", tam);
+                            long prox = ftell(bin);
+                            long ant = -1;
+                            long offset;
+                            // printf("topo: %d\n", rc.topo2);
+                            if(rc.topo2 != -1){
+                                fseek(bin, rc.topo2 + 1, SEEK_SET);
+                                int tam2;
+                                fread(&tam2, 4, 1, bin);
+                                // printf("%d\n", tam2);
+                                while(tam < tam2){
+                                    ant = ftell(bin);
+                                    fread(&offset, 8, 1, bin);
+                                    fseek(bin, offset + 1, SEEK_SET);
+                                    fread(&tam2, 4, 1, bin);
+                                }
+                            }
+                            if(ant == -1){
+                                fseek(bin, prox, SEEK_SET);
+                                fwrite(&rc.topo2, 8, 1, bin);
+                                rc.topo2 = cur;
+                            }
+                            else{
+                                fseek(bin, ant, SEEK_SET);
+                                fwrite(&cur, 8, 1, bin);
+                                fseek(bin, prox, SEEK_SET);
+                                fwrite(&offset, 8, 1, bin);
+                            }
+                        }
+                        rc.nroRegRem++;
+                        fseek(bin, end + next, SEEK_SET);
+                        cur = buscar_veiculo(bin, indices, qtd_ind, f, tipo[4], &next);
+                        // max++;
+                    }
+                }
+                else if(cur != -1){
+                    fseek(bin, cur, SEEK_SET);
+                    char rem = '1';
+                    fwrite(&rem, 1, 1, bin);
+                    if(tipo[4] == '1'){
+                        fwrite(&rc.topo1, 4, 1, bin);
+                        rc.topo1 = (cur - 182) / 97;
+                    }
+                    else if(tipo[4] == '2'){
+                        int tam;
+                        fread(&tam, 4, 1, bin);
+                        // printf("tamanho: %d\n", tam);
+                        long prox = ftell(bin);
+                        long ant = -1;
+                        long offset;
+                        // printf("topo: %d\n", rc.topo2);
+                        if(rc.topo2 != -1){
+                            fseek(bin, rc.topo2 + 1, SEEK_SET);
+                            int tam2;
+                            fread(&tam2, 4, 1, bin);
+                            // printf("%d\n", tam2);
+                            while(tam < tam2){
+                                ant = ftell(bin);
+                                fread(&offset, 8, 1, bin);
+                                fseek(bin, offset + 1, SEEK_SET);
+                                fread(&tam2, 4, 1, bin);
+                            }
+                        }
+                        if(ant == -1){
+                            fseek(bin, prox, SEEK_SET);
+                            fwrite(&rc.topo2, 8, 1, bin);
+                            rc.topo2 = cur;
+                        }
+                        else{
+                            fseek(bin, ant, SEEK_SET);
+                            fwrite(&cur, 8, 1, bin);
+                            fseek(bin, prox, SEEK_SET);
+                            fwrite(&offset, 8, 1, bin);
+                        }
+                    }
+                    rc.nroRegRem++;
+                }
+                // fclose(bin2);
                 // teste
-                printf("id: %d\n", f.id);
-                printf("sigla: %s\n", f.sigla);
-                mostrar_veiculo(f);
+                // printf("id: %d\n", f.id);
+                // printf("sigla: %s\n", f.sigla);
+                // mostrar_veiculo(f);
                 //
 
+                // printf("%d\n", buscar_veiculo(bin, indices, qtd_ind, f, tipo[4]));
                 //while (buscar_veiculo(FILE *bin, FILE, veiculo f, char tipo, veiculo *v))
             }
-
+            fseek(bin, 0, SEEK_SET);
+            // printf("topo final: %d\n", rc.topo1);
+            escrever_cabecalho(rc, bin, tipo[4]);
+            fclose(bin);
+            fclose(ind);
+            binarioNaTela(binname);
+            binarioNaTela(indname);
         }
         break;
 

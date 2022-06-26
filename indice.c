@@ -48,18 +48,19 @@ Indice *ler_indices(FILE *stream, int *qtd, char tipo){
     // leitura dos indices
     Indice *indices = NULL;
     int qtd_ind = 0;
-    char c;
-    while ((c = fgetc(stream)) != EOF){
+    unsigned char c = fgetc(stream);
+    while (!feof(stream)){
         ungetc(c, stream);
 
         Indice *aux = realloc(indices, ((qtd_ind + 1) * sizeof(Indice)));
-        indices = aux;                    
-        fread(&indices[qtd_ind].id, sizeof(int), 1, stream);
+        indices = aux;         
+        fread(&indices[qtd_ind].id, 4, 1, stream);
         if (tipo == '1')
             fread(&indices[qtd_ind].RRN, sizeof(int), 1, stream);
         else if (tipo == '2')
             fread(&indices[qtd_ind].byteOffset, sizeof(long), 1, stream);
         qtd_ind++;
+        c = fgetc(stream);
     }
 
     // retorno da funcao
