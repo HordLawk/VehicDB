@@ -4,6 +4,7 @@
 #include "veiculo.h"
 #include "indice.h"
 #include "utils.h"
+#include "cabecalho.h"
 
 void mostrar_veiculo(veiculo v){
     printf("MARCA DO VEICULO: %s\n", v.marca == NULL ? "NAO PREENCHIDO" : v.marca);
@@ -152,7 +153,6 @@ veiculo ler_veiculo_csv(FILE *stream){
 
 long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int *next){
     long int inicio = ftell(stream);
-
     // guarda o tamanho dos bytes lidos do registro ate o momento
     int lido = 0;
     // guarda o tamanho total do registro em bytes
@@ -371,7 +371,9 @@ veiculo ler_novo_veiculo(FILE *stream){
 long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, char tipo, long int *next){
     indices = (Indice*)indices;
     if (f.id != -1){
+        // printf("antes do busca indices\n");
         int pos = busca_indices(indices, 0, qtd_ind, f.id);
+        // printf("posicao: %d\n", pos);
         if(pos == -1) return -1;
         switch(tipo){
             case '1':{
@@ -379,8 +381,11 @@ long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, cha
                 long cur = ftell(stream);
                 fseek(stream, offset, SEEK_SET);
                 veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
+                // printf("quarto\n");
                 long filtro = filtrarVeiculo(stream, f, tipo, &v, next);
+                // printf("quinto\n");
                 desalocar_veiculo(v);
+                // printf("sexto");
                 fseek(stream, cur, SEEK_SET);
                 return filtro;
             }
@@ -399,14 +404,16 @@ long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, cha
         }
     }
     
-    char c;
-    while ((c = fgetc(stream)) != EOF){
+    char c = fgetc(stream);
+    while (!feof(stream)){
         ungetc(c, stream);
         veiculo v = {-1, -1, -1, "$$", NULL, NULL, NULL};
         long int cur = filtrarVeiculo(stream, f, tipo, &v, next);
+        printf("cur: %d\nnext: %d\n", cur, *next);
         desalocar_veiculo(v);
         if(cur != -1) return cur;
         if (*next) fseek(stream, *next, SEEK_CUR);
+        c = fgetc(stream);
     }
     return -1;
 }
@@ -417,15 +424,115 @@ void atualizar_veiculo_1(veiculo *v, veiculo *valores, veiculo *campos){
     if (campos->qtt != -1) v->qtt = valores->qtt;
     if (strncmp(campos->sigla, "$$", 2)) strncpy(v->sigla, valores->sigla, 2);
     if (campos->cidade){
-        free(v->cidade);
-        strcpy(v->cidade, valores->cidade);
+        if(v->cidade){
+            free(v->cidade);
+            v->cidade = NULL;
+        }
+        if(valores->cidade){
+            v->cidade = realloc(v->cidade, (strlen(valores->cidade) * sizeof(char)) + 1);
+            strcpy(v->cidade, valores->cidade);
+        }
     }
     if (campos->marca){
-        free(v->marca);
-        strcpy(v->marca, valores->marca);
+        if(v->marca){
+            free(v->marca);
+            v->marca = NULL;
+        }
+        if(valores->marca){
+            v->marca = realloc(v->marca, (strlen(valores->marca) * sizeof(char)) + 1);
+            strcpy(v->marca, valores->marca);
+        }
     }
     if (campos->modelo){
-        free(v->modelo);
-        strcpy(v->modelo, valores->modelo);
+        if(v->modelo){
+            free(v->modelo);
+            v->modelo = NULL;
+        }
+        if(valores->modelo){
+            v->modelo = realloc(v->modelo, (strlen(valores->modelo) * sizeof(char)) + 1);
+            strcpy(v->modelo, valores->modelo);
+        }
+    }
+}
+
+void remover_veiculo(FILE *bin, long cur, char tipo, void *rc){
+    rc = ((cabecalho *)rc);
+    fseek(bin, cur, SEEK_SET);
+    char rem = '1';
+    fwrite(&rem, 1, 1, bin);
+    if(tipo == '1'){
+        fwrite(&((cabecalho *)rc)->topo1, 4, 1, bin);
+        ((cabecalho *)rc)->topo1 = (cur - 182) / 97;
+    }
+    else if(tipo == '2'){
+        int tam;
+        fread(&tam, 4, 1, bin);
+        // printf("tamanho: %d\n", tam);
+        long prox = ftell(bin);
+        long ant = -1;
+        long offset;
+        // printf("topo: %d\n", rc.topo2);
+        if(((cabecalho *)rc)->topo2 != -1){
+            fseek(bin, ((cabecalho *)rc)->topo2 + 1, SEEK_SET);
+            int tam2;
+            fread(&tam2, 4, 1, bin);
+            // printf("%d\n", tam2);
+            while(tam < tam2){
+                ant = ftell(bin);
+                fread(&offset, 8, 1, bin);
+                fseek(bin, offset + 1, SEEK_SET);
+                fread(&tam2, 4, 1, bin);
+            }
+        }
+        if(ant == -1){
+            fseek(bin, prox, SEEK_SET);
+            fwrite(&((cabecalho *)rc)->topo2, 8, 1, bin);
+            ((cabecalho *)rc)->topo2 = cur;
+        }
+        else{
+            fseek(bin, ant, SEEK_SET);
+            fwrite(&cur, 8, 1, bin);
+            fseek(bin, prox, SEEK_SET);
+            fwrite(&offset, 8, 1, bin);
+        }
+    }
+    ((cabecalho *)rc)->nroRegRem++;
+}
+
+void inserir_veiculo(void *rc, FILE *bin, veiculo v){
+    int tamTopo = -1;
+    char removido = '0';
+    long prox = -1;
+    if (((cabecalho *)rc)->topo2 != -1){
+        fseek(bin, ((cabecalho *)rc)->topo2 + 1, SEEK_SET);
+        fread(&tamTopo, sizeof(int), 1, bin);
+    }
+    int tamRegistro = 8 + calcular_tamanho(v);
+    // nao existem registros removidos ou espaco insuficiente -> escrever no fim do arquivo
+    if (((cabecalho *)rc)->topo2 == -1 || tamRegistro > tamTopo){
+        fseek(bin, ((cabecalho *)rc)->proxByteOffset, SEEK_SET);
+        fwrite(&removido, sizeof(char), 1, bin);
+        fwrite(&tamRegistro, sizeof(int), 1, bin);
+        fwrite(&prox, sizeof(long), 1, bin);
+        escrever_veiculo(v, bin);
+        ((cabecalho *)rc)->proxByteOffset += 1 + 4 + tamRegistro;
+    }
+    // existe registro removido com espaco suficiente -> escrever no byteOffset
+    else{
+        fseek(bin, ((cabecalho *)rc)->topo2, SEEK_SET);
+        fwrite(&removido, sizeof(char), 1, bin);
+        fseek(bin, 4, SEEK_CUR);
+        fread(&((cabecalho *)rc)->topo2, sizeof(long), 1, bin);
+        fseek(bin, -8, SEEK_CUR);
+        fwrite(&prox, sizeof(long), 1, bin);
+        escrever_veiculo(v, bin);
+        ((cabecalho *)rc)->nroRegRem--;
+        
+        // preencher resto do registro com lixo
+        char lixo = '$';
+        while (tamRegistro < tamTopo){
+            fwrite(&lixo, sizeof(char), 1, bin);
+            tamRegistro++;
+        }
     }
 }

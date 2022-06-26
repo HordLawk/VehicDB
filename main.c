@@ -63,19 +63,28 @@ void ler_novo_campo(veiculo *valores, veiculo *campos){
         campos->cidade = malloc(2 * sizeof(char));
         strcpy(campos->cidade, "1");
         valor = scan_quote_string();
-        if (strcmp(valor, "") != 0) strcpy(valores->cidade, valor);
+        if (strcmp(valor, "") != 0){
+            valores->cidade = realloc(valores->cidade, (strlen(valor) * sizeof(char)) + 1);
+            strcpy(valores->cidade, valor);
+        }
     }
     else if (!strcmp(campo, "marca")){
         campos->marca = malloc(2 * sizeof(char));
         strcpy(campos->marca, "1");
         valor = scan_quote_string();
-        if (strcmp(valor, "") != 0) strcpy(valores->marca, valor);
+        if (strcmp(valor, "") != 0){
+            valores->marca = realloc(valores->marca, (strlen(valor) * sizeof(char)) + 1);
+            strcpy(valores->marca, valor);
+        }
     }
     else if (!strcmp(campo, "modelo")){
         campos->modelo = malloc(2 * sizeof(char));
         strcpy(campos->modelo, "1");
         valor = scan_quote_string();
-        if (strcmp(valor, "") != 0) strcpy(valores->modelo, valor);
+        if (strcmp(valor, "") != 0){
+            valores->modelo = realloc(valores->modelo, (strlen(valor) * sizeof(char)) + 1);
+            strcpy(valores->modelo, valor);
+        }
     }
     free(campo);
     free(valor);
@@ -267,7 +276,7 @@ int main(void){
 
         /* Funcionalidade 3:
         recuperacao de todos os registros que satisfazem criterios de busca */
-        /*
+        
         case 3:{
             // leitura do comando
             char *tipo, *binname;
@@ -355,7 +364,7 @@ int main(void){
             fclose(bin);
         }
         break;
-        */
+        
         /* Funcionalidade 4:
         recuperacao e exibicao de registro a partir de RRN */
         case 4:{
@@ -528,92 +537,94 @@ int main(void){
                         // printf("next: %d\noffset: %ld\nend: %ld\n", next, cur, end);
                         // fseek(bin2, cur + 5, SEEK_SET);
                         // mostrar_veiculo(ler_veiculo(bin2, 97));
-                        fseek(bin, cur, SEEK_SET);
-                        char rem = '1';
-                        fwrite(&rem, 1, 1, bin);
-                        if(tipo[4] == '1'){
-                            fwrite(&rc.topo1, 4, 1, bin);
-                            rc.topo1 = (cur - 182) / 97;
-                        }
-                        else if(tipo[4] == '2'){
-                            int tam;
-                            fread(&tam, 4, 1, bin);
-                            // printf("tamanho: %d\n", tam);
-                            long prox = ftell(bin);
-                            long ant = -1;
-                            long offset;
-                            // printf("topo: %d\n", rc.topo2);
-                            if(rc.topo2 != -1){
-                                fseek(bin, rc.topo2 + 1, SEEK_SET);
-                                int tam2;
-                                fread(&tam2, 4, 1, bin);
-                                // printf("%d\n", tam2);
-                                while(tam < tam2){
-                                    ant = ftell(bin);
-                                    fread(&offset, 8, 1, bin);
-                                    fseek(bin, offset + 1, SEEK_SET);
-                                    fread(&tam2, 4, 1, bin);
-                                }
-                            }
-                            if(ant == -1){
-                                fseek(bin, prox, SEEK_SET);
-                                fwrite(&rc.topo2, 8, 1, bin);
-                                rc.topo2 = cur;
-                            }
-                            else{
-                                fseek(bin, ant, SEEK_SET);
-                                fwrite(&cur, 8, 1, bin);
-                                fseek(bin, prox, SEEK_SET);
-                                fwrite(&offset, 8, 1, bin);
-                            }
-                        }
-                        rc.nroRegRem++;
+                        remover_veiculo(bin, cur, tipo[4], &rc);
+                        // fseek(bin, cur, SEEK_SET);
+                        // char rem = '1';
+                        // fwrite(&rem, 1, 1, bin);
+                        // if(tipo[4] == '1'){
+                        //     fwrite(&rc.topo1, 4, 1, bin);
+                        //     rc.topo1 = (cur - 182) / 97;
+                        // }
+                        // else if(tipo[4] == '2'){
+                        //     int tam;
+                        //     fread(&tam, 4, 1, bin);
+                        //     // printf("tamanho: %d\n", tam);
+                        //     long prox = ftell(bin);
+                        //     long ant = -1;
+                        //     long offset;
+                        //     // printf("topo: %d\n", rc.topo2);
+                        //     if(rc.topo2 != -1){
+                        //         fseek(bin, rc.topo2 + 1, SEEK_SET);
+                        //         int tam2;
+                        //         fread(&tam2, 4, 1, bin);
+                        //         // printf("%d\n", tam2);
+                        //         while(tam < tam2){
+                        //             ant = ftell(bin);
+                        //             fread(&offset, 8, 1, bin);
+                        //             fseek(bin, offset + 1, SEEK_SET);
+                        //             fread(&tam2, 4, 1, bin);
+                        //         }
+                        //     }
+                        //     if(ant == -1){
+                        //         fseek(bin, prox, SEEK_SET);
+                        //         fwrite(&rc.topo2, 8, 1, bin);
+                        //         rc.topo2 = cur;
+                        //     }
+                        //     else{
+                        //         fseek(bin, ant, SEEK_SET);
+                        //         fwrite(&cur, 8, 1, bin);
+                        //         fseek(bin, prox, SEEK_SET);
+                        //         fwrite(&offset, 8, 1, bin);
+                        //     }
+                        // }
+                        // rc.nroRegRem++;
                         fseek(bin, end + next, SEEK_SET);
                         cur = buscar_veiculo(bin, indices, qtd_ind, f, tipo[4], &next);
                         // max++;
                     }
                 }
                 else if(cur != -1){
-                    fseek(bin, cur, SEEK_SET);
-                    char rem = '1';
-                    fwrite(&rem, 1, 1, bin);
-                    if(tipo[4] == '1'){
-                        fwrite(&rc.topo1, 4, 1, bin);
-                        rc.topo1 = (cur - 182) / 97;
-                    }
-                    else if(tipo[4] == '2'){
-                        int tam;
-                        fread(&tam, 4, 1, bin);
-                        // printf("tamanho: %d\n", tam);
-                        long prox = ftell(bin);
-                        long ant = -1;
-                        long offset;
-                        // printf("topo: %d\n", rc.topo2);
-                        if(rc.topo2 != -1){
-                            fseek(bin, rc.topo2 + 1, SEEK_SET);
-                            int tam2;
-                            fread(&tam2, 4, 1, bin);
-                            // printf("%d\n", tam2);
-                            while(tam < tam2){
-                                ant = ftell(bin);
-                                fread(&offset, 8, 1, bin);
-                                fseek(bin, offset + 1, SEEK_SET);
-                                fread(&tam2, 4, 1, bin);
-                            }
-                        }
-                        if(ant == -1){
-                            fseek(bin, prox, SEEK_SET);
-                            fwrite(&rc.topo2, 8, 1, bin);
-                            rc.topo2 = cur;
-                        }
-                        else{
-                            fseek(bin, ant, SEEK_SET);
-                            fwrite(&cur, 8, 1, bin);
-                            fseek(bin, prox, SEEK_SET);
-                            fwrite(&offset, 8, 1, bin);
-                        }
-                    }
-                    rc.nroRegRem++;
+                    remover_veiculo(bin, cur, tipo[4], &rc);
+                    // fseek(bin, cur, SEEK_SET);
+                    // char rem = '1';
+                    // fwrite(&rem, 1, 1, bin);
+                    // if(tipo[4] == '1'){
+                    //     fwrite(&rc.topo1, 4, 1, bin);
+                    //     rc.topo1 = (cur - 182) / 97;
+                    // }
+                    // else if(tipo[4] == '2'){
+                    //     int tam;
+                    //     fread(&tam, 4, 1, bin);
+                    //     // printf("tamanho: %d\n", tam);
+                    //     long prox = ftell(bin);
+                    //     long ant = -1;
+                    //     long offset;
+                    //     // printf("topo: %d\n", rc.topo2);
+                    //     if(rc.topo2 != -1){
+                    //         fseek(bin, rc.topo2 + 1, SEEK_SET);
+                    //         int tam2;
+                    //         fread(&tam2, 4, 1, bin);
+                    //         // printf("%d\n", tam2);
+                    //         while(tam < tam2){
+                    //             ant = ftell(bin);
+                    //             fread(&offset, 8, 1, bin);
+                    //             fseek(bin, offset + 1, SEEK_SET);
+                    //             fread(&tam2, 4, 1, bin);
+                    //         }
+                    //     }
+                    //     if(ant == -1){
+                    //         fseek(bin, prox, SEEK_SET);
+                    //         fwrite(&rc.topo2, 8, 1, bin);
+                    //         rc.topo2 = cur;
+                    //     }
+                    //     else{
+                    //         fseek(bin, ant, SEEK_SET);
+                    //         fwrite(&cur, 8, 1, bin);
+                    //         fseek(bin, prox, SEEK_SET);
+                    //         fwrite(&offset, 8, 1, bin);
+                    //     }
+                    // }
+                    // rc.nroRegRem++;
                 }
                 // fclose(bin2);
                 // teste
@@ -751,41 +762,42 @@ int main(void){
                 while (nInsercoes--){
                     veiculo v = ler_novo_veiculo(stdin);
 
-                    int tamTopo = -1;
-                    char removido = '0';
-                    long prox = -1;
-                    if (rc.topo2 != -1){
-                        fseek(bin, rc.topo2 + 1, SEEK_SET);
-                        fread(&tamTopo, sizeof(int), 1, bin);
-                    }
-                    int tamRegistro = 8 + calcular_tamanho(v);
-                    // nao existem registros removidos ou espaco insuficiente -> escrever no fim do arquivo
-                    if (rc.topo2 == -1 || tamRegistro > tamTopo){
-                        fseek(bin, rc.proxByteOffset, SEEK_SET);
-                        fwrite(&removido, sizeof(char), 1, bin);
-                        fwrite(&tamRegistro, sizeof(int), 1, bin);
-                        fwrite(&prox, sizeof(long), 1, bin);
-                        escrever_veiculo(v, bin);
-                        rc.proxByteOffset += 1 + 4 + tamRegistro;
-                    }
-                    // existe registro removido com espaco suficiente -> escrever no byteOffset
-                    else{
-                        fseek(bin, rc.topo2, SEEK_SET);
-                        fwrite(&removido, sizeof(char), 1, bin);
-                        fseek(bin, 4, SEEK_CUR);
-                        fread(&rc.topo2, sizeof(long), 1, bin);
-                        fseek(bin, -8, SEEK_CUR);
-                        fwrite(&prox, sizeof(long), 1, bin);
-                        escrever_veiculo(v, bin);
-                        rc.nroRegRem--;
+                    // int tamTopo = -1;
+                    // char removido = '0';
+                    // long prox = -1;
+                    // if (rc.topo2 != -1){
+                    //     fseek(bin, rc.topo2 + 1, SEEK_SET);
+                    //     fread(&tamTopo, sizeof(int), 1, bin);
+                    // }
+                    // int tamRegistro = 8 + calcular_tamanho(v);
+                    // // nao existem registros removidos ou espaco insuficiente -> escrever no fim do arquivo
+                    // if (rc.topo2 == -1 || tamRegistro > tamTopo){
+                    //     fseek(bin, rc.proxByteOffset, SEEK_SET);
+                    //     fwrite(&removido, sizeof(char), 1, bin);
+                    //     fwrite(&tamRegistro, sizeof(int), 1, bin);
+                    //     fwrite(&prox, sizeof(long), 1, bin);
+                    //     escrever_veiculo(v, bin);
+                    //     rc.proxByteOffset += 1 + 4 + tamRegistro;
+                    // }
+                    // // existe registro removido com espaco suficiente -> escrever no byteOffset
+                    // else{
+                    //     fseek(bin, rc.topo2, SEEK_SET);
+                    //     fwrite(&removido, sizeof(char), 1, bin);
+                    //     fseek(bin, 4, SEEK_CUR);
+                    //     fread(&rc.topo2, sizeof(long), 1, bin);
+                    //     fseek(bin, -8, SEEK_CUR);
+                    //     fwrite(&prox, sizeof(long), 1, bin);
+                    //     escrever_veiculo(v, bin);
+                    //     rc.nroRegRem--;
                         
-                        // preencher resto do registro com lixo
-                        char lixo = '$';
-                        while (tamRegistro < tamTopo){
-                            fwrite(&lixo, sizeof(char), 1, bin);
-                            tamRegistro++;
-                        }
-                    }
+                    //     // preencher resto do registro com lixo
+                    //     char lixo = '$';
+                    //     while (tamRegistro < tamTopo){
+                    //         fwrite(&lixo, sizeof(char), 1, bin);
+                    //         tamRegistro++;
+                    //     }
+                    // }
+                    inserir_veiculo(&rc, bin, v);
                     desalocar_veiculo(v);
                 }
 
@@ -845,7 +857,9 @@ int main(void){
                     break;
                 }
 
+                long inicio = ftell(bin);
                 while (nAtualizacoes--){
+                    fseek(bin, inicio, SEEK_SET);
                     veiculo filtro = {-1, -1, -1, "$$", NULL, NULL, NULL}; // criterios de busca
                     veiculo valores = {-1, -1, -1, "$$", NULL, NULL, NULL}; // valores que devem ser atualizados
                     veiculo campos = {-1, -1, -1, "$$", NULL, NULL, NULL}; // indica os campos que devem ser atualizados
@@ -861,12 +875,18 @@ int main(void){
                     }
 
                     int qtd_ind;
+                    fseek(ind, 0, SEEK_SET);
                     Indice *indices = ler_indices(ind, &qtd_ind, '1');
+                    // mostrar_indices(indices, qtd_ind, '1');
+                    // mostrar_veiculo(filtro);
+                    // printf("primeiro %d\n", qtd_ind);
                     long int cur, next;
                     while (cur = buscar_veiculo(bin, indices, qtd_ind, filtro, tipo[4], &next), cur != -1){
+                        // printf("segundo\n");
                         fseek(bin, cur + 5, SEEK_SET);
                         veiculo v = ler_veiculo(bin, 97);
-                        mostrar_veiculo(v);
+                        // printf("terceiro\n");
+                        // mostrar_veiculo(v);
                         atualizar_veiculo_1(&v, &valores, &campos);
                         fseek(bin, cur + 5, SEEK_SET);
                         escrever_veiculo(v, bin);
@@ -880,12 +900,27 @@ int main(void){
                         }
 
                         desalocar_veiculo(v);
+                        if(filtro.id != -1) break;
                     }
 
                     desalocar_veiculo(filtro);
                     desalocar_veiculo(valores);
                     desalocar_veiculo(campos);
                 }
+
+                // atualizar arquivo de indices
+                fseek(bin, 182, SEEK_SET);
+                fclose(ind);
+                ind = fopen(indname, "wb");
+                funcionalidade_5(bin, ind, tipo);
+
+                fclose(bin);
+                fclose(ind);
+                binarioNaTela(binname);
+                binarioNaTela(indname);
+                free(tipo);
+                free(binname);
+                free(indname);
 
             }
             // se tipo selecionado for "tipo2"
@@ -902,7 +937,9 @@ int main(void){
                     break;
                 }
 
+                long inicio = ftell(bin);
                 while (nAtualizacoes--){
+                    fseek(bin, inicio, SEEK_SET);
                     veiculo filtro = {-1, -1, -1, "$$", NULL, NULL, NULL}; // criterios de busca
                     veiculo valores = {-1, -1, -1, "$$", NULL, NULL, NULL}; // valores que devem ser atualizados
                     veiculo campos = {-1, -1, -1, "$$", NULL, NULL, NULL}; // indica os campos que devem ser atualizados
@@ -917,37 +954,78 @@ int main(void){
                         ler_novo_campo(&valores, &campos);
                     }
 
-                    // nao fiz nada aqui direito
+                    // printf("primeiro\n");
                     int qtd_ind;
+                    fseek(ind, 0, SEEK_SET);
+                    // printf("segundo\n");
                     Indice *indices = ler_indices(ind, &qtd_ind, '2');
+                    // printf("terceiro\n");
+                    // mostrar_indices(indices, qtd_ind, '2');
+                    // printf("quarto\n");
                     long int cur, next;
                     while (cur = buscar_veiculo(bin, indices, qtd_ind, filtro, tipo[4], &next), cur != -1){
-                        fseek(bin, cur + 5, SEEK_SET);
-                        // acho que tem que ler removido, ler tam, pular prox, e ai ler veiculo com o tamanho - 8
-                        veiculo v = ler_veiculo(bin, 97);
-                        mostrar_veiculo(v);
+                        long end = ftell(bin);
+                        // printf("quinto\n");
+                        fseek(bin, cur + 1, SEEK_SET);
+                        // printf("sexto\n");
+                        int tam;
+                        fread(&tam, 4, 1, bin);
+                        // printf("setimo\n");
+                        fseek(bin, 8, SEEK_CUR);
+                        // printf("oitavo\n");
+                        veiculo v = ler_veiculo(bin, tam);
+                        // printf("nono\n");
+                        // mostrar_veiculo(v);
                         // deve funcionar
                         atualizar_veiculo_1(&v, &valores, &campos);
+                        int tamreg = calcular_tamanho(v) + 8;
+                        if(tamreg <= tam){
+                            fseek(bin, cur + 13, SEEK_SET);
+                            escrever_veiculo(v, bin);
+                            char lixo = '$';
+                            while (tamreg < tam){
+                                fwrite(&lixo, sizeof(char), 1, bin);
+                                tamreg++;
+                            }
+                        }
+                        else{
+                            remover_veiculo(bin, cur, '2', &rc);
+                            inserir_veiculo(&rc, bin, v);
+                        }
                         // if novotamanho <= tamanho : escreve ai mesmo
                         // else remocao + insercao
-                        fseek(bin, cur + 5, SEEK_SET);
-                        escrever_veiculo(v, bin);
 
                         // preencher resto do registro com lixo -- talvez tenha isos mesmo se inserir aqui
-                        char lixo = '$';
-                        int tamRegistro = 1 + 4 + calcular_tamanho(v);
-                        while (tamRegistro < 97){
-                            fwrite(&lixo, sizeof(char), 1, bin);
-                            tamRegistro++;
-                        }
 
                         desalocar_veiculo(v);
+                        if(filtro.id != -1) break;
+                        // printf("offset: %d\n", end + next);
+                        fseek(bin, end + next, SEEK_SET);
                     }
+                    // printf("decimo\n");
 
                     desalocar_veiculo(filtro);
                     desalocar_veiculo(valores);
                     desalocar_veiculo(campos);
                 }
+
+                // atualizar arquivo de indices
+                fseek(bin, 190, SEEK_SET);
+                fclose(ind);
+                ind = fopen(indname, "wb");
+                funcionalidade_5(bin, ind, tipo);
+
+                // atualizar cabecalho do registro de dados
+                fseek(bin, 0, SEEK_SET);
+                escrever_cabecalho(rc, bin, '2');
+
+                fclose(bin);
+                fclose(ind);
+                binarioNaTela(binname);
+                binarioNaTela(indname);
+                free(tipo);
+                free(binname);
+                free(indname);
 
             }
         }

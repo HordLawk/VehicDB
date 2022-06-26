@@ -44,3 +44,5 @@ long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int
 veiculo ler_novo_veiculo(FILE *stream);
 long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, char tipo, long int *next);
 void atualizar_veiculo_1(veiculo *v, veiculo *valores, veiculo *campos);
+void remover_veiculo(FILE *bin, long cur, char tipo, void *rc);
+void inserir_veiculo(void *rc, FILE *bin, veiculo v);
