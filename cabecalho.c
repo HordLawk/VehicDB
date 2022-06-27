@@ -39,7 +39,6 @@ cabecalho ler_cabecalho(FILE *stream, char tipo){
         fread(&c.topo2, sizeof(long), 1, stream);
 
     fread(&c.descricao, sizeof(char), 40, stream);
-
     fread(c.desC1, sizeof(char), 22, stream);
     fread(c.desC2, sizeof(char), 19, stream);
     fread(c.desC3, sizeof(char), 24, stream);
@@ -55,7 +54,6 @@ cabecalho ler_cabecalho(FILE *stream, char tipo){
         fread(&c.proxRRN, sizeof(int), 1, stream);
     else
         fread(&c.proxByteOffset, sizeof(long), 1, stream);
-
     fread(&c.nroRegRem, sizeof(int), 1, stream);
 
     return c;

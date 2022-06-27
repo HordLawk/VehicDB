@@ -387,8 +387,11 @@ int main(void){
                 else if(cur != -1){
                     remover_veiculo(bin, cur, tipo[4], &rc);
                 }
+                desalocar_veiculo(f);
                 
             }
+            free(indices);
+
             // atualizar arquivo de indices
             if (tipo[4] == '1') fseek(bin, TAM_CAB1, SEEK_SET);
             else if (tipo[4] == '2') fseek(bin, TAM_CAB2, SEEK_SET);
@@ -643,6 +646,7 @@ int main(void){
                 }
                 fseek(bin, TAM_CAB2, SEEK_SET); // ponteiro no inicio dos registros
             }
+            free(indices);
 
             // atualizar arquivo de indices
             fclose(ind);
