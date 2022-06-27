@@ -365,6 +365,7 @@ int main(void){
             else if (tipo[4] == '2') inicio = TAM_CAB2;
 
             while (nRemocoes--){
+                // sempre que for realizar uma nova remocao voltar para o inicio dos registros
                 fseek(bin, inicio, SEEK_SET);
 
                 // leitura dos criterios de remocao
@@ -375,17 +376,25 @@ int main(void){
                     ler_campo(&f);
                 }
 
+                // recupera o offset do primeiro registro que coincide com os criterios
                 long int next;
                 long int cur = buscar_veiculo(bin, indices, qtd_ind, f, tipo[4], &next);
                 if(f.id == -1){
+                    // caso a busca nao utilize id continua seguindo pelo arquivo de dados procurando mais registros que
+                    // se encaixem nos criterios ate que nao sejam encontrados novos registros
                     while (cur != -1){
+                        // guarda onde o ponteiro do arquivo de dados estava para poder seguir para o proximo registro
+                        // apos efetuar a remocao
                         long end = ftell(bin);
                         remover_veiculo(bin, cur, tipo[4], &rc);
+                        // move o ponteiro do arquivo de dados para o proximo registro
                         fseek(bin, end + next, SEEK_SET);
                         cur = buscar_veiculo(bin, indices, qtd_ind, f, tipo[4], &next);
                     }
                 }
                 else if(cur != -1){
+                    // caso a busca utilize id e tenha sido encontrado um registro, remove apenas esse registro, ja que
+                    // ids nao podem ser repetidos
                     remover_veiculo(bin, cur, tipo[4], &rc);
                 }
                 desalocar_veiculo(f);
@@ -547,8 +556,10 @@ int main(void){
 
             // se tipo selecionado for "tipo1"
             if (strcmp(tipo, "tipo1") == 0){
+                // offset do inicio dos registros de dados
                 long inicio = TAM_CAB1;
                 while (nAtualizacoes--){
+                    // sempre que for realizar uma nova atualizacao voltar para o inicio dos registros
                     fseek(bin, inicio, SEEK_SET);
                     veiculo filtro = {-1, -1, -1, "$$", NULL, NULL, NULL}; // criterios de busca
                     veiculo valores = {-1, -1, -1, "$$", NULL, NULL, NULL}; // valores que devem ser atualizados
@@ -565,9 +576,11 @@ int main(void){
                         ler_novo_campo(&valores, &campos);
                     }
 
-                    // busca e atualizacao dos veiculos
+                    // segue lendo os registros ate que nao seja encontrado um proximo registro que coincide com os
+                    // criterios de busca desejados
                     long int cur, next;
                     while (cur = buscar_veiculo(bin, indices, qtd_ind, filtro, tipo[4], &next), cur != -1){
+                        // pula para o inicio dos dados do veiculo do registro
                         fseek(bin, cur + sizeof(char) + sizeof(int), SEEK_SET);
                         veiculo v = ler_veiculo(bin, TAM_TIPO1);
 
@@ -584,6 +597,8 @@ int main(void){
                         }
 
                         desalocar_veiculo(v);
+                        // caso o filtro utilize um id nao e necessario repetir a tentativa de busca e atualizacao ja
+                        // que ids nao podem ser repetidos
                         if(filtro.id != -1) break;
                     }
                     desalocar_veiculo(filtro);
@@ -594,8 +609,10 @@ int main(void){
             }
             // se tipo selecionado for "tipo2"
             else if (strcmp(tipo, "tipo2") == 0){
+                // offset do inicio dos registros de dados
                 long inicio = TAM_CAB2;
                 while (nAtualizacoes--){
+                    // sempre que for realizar uma nova atualizacao voltar para o inicio dos registros
                     fseek(bin, inicio, SEEK_SET);
                     veiculo filtro = {-1, -1, -1, "$$", NULL, NULL, NULL}; // criterios de busca
                     veiculo valores = {-1, -1, -1, "$$", NULL, NULL, NULL}; // valores que devem ser atualizados
@@ -612,23 +629,33 @@ int main(void){
                         ler_novo_campo(&valores, &campos);
                     }
 
-                    // busca e atualizacao dos veiculos
+                    // segue lendo os registros ate que nao seja encontrado um proximo registro que coincide com os
+                    // criterios de busca desejados
                     long int cur, next;
                     while (cur = buscar_veiculo(bin, indices, qtd_ind, filtro, tipo[4], &next), cur != -1){
+                        // guarda a posicao atual do ponteiro do arquivo de dados para retornar para o proximo registro
+                        // apos efetuar a atualizacao
                         long end = ftell(bin);
 
+                        // pula para o campo que guarda o tamanho do registro
                         fseek(bin, cur + sizeof(char), SEEK_SET);
 
                         int tam;
                         fread(&tam, sizeof(int), 1, bin);
+                        // pula para o inicio dos dados do veiculo do registro
                         fseek(bin, sizeof(long), SEEK_CUR);
 
+                        // o tamanho dos dados do veiculo e o tamanho do registro menus o tamanho do campo que guardaria
+                        // o offset do proximo registro removido
                         veiculo v = ler_veiculo(bin, tam - sizeof(long));
                         atualizar_veiculo(&v, &valores, &campos);
+                        // o tamanho do novo registro sera o tamanho dos dados do veiculo mais o tamanho do campo que
+                        // guardaria o offset do proximo registro removido
                         int tamRegistro = calcular_tamanho(v) + sizeof(long);
                         // se dados atualizados cabem no registro existente -> sobrescrever e
                         // completar com lixo (se necessario)
                         if(tamRegistro <= tam){
+                            // pula para o inicio dos dados do veiculo do registro
                             fseek(bin, cur + sizeof(char) + sizeof(int) + sizeof(long), SEEK_SET);
                             escrever_veiculo(v, bin);
                             char lixo = '$';
@@ -644,7 +671,10 @@ int main(void){
                         }
 
                         desalocar_veiculo(v);
+                        // caso o filtro utilize um id nao e necessario repetir a tentativa de busca e atualizacao ja
+                        // que ids nao podem ser repetidos
                         if(filtro.id != -1) break;
+                        // segue para o inicio do proximo registro
                         fseek(bin, end + next, SEEK_SET);
                     }
                     desalocar_veiculo(filtro);
