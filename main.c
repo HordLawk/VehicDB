@@ -17,11 +17,11 @@ int main(void){
             // leitura do comando e abertura dos arquivos
             scanf("%ms %ms %ms", &tipo, &csvname, &binname);
             FILE *csv = fopen(csvname, "r");
-            FILE *bin = fopen(binname, "wb");
             if (csv == NULL){
                 printf("Falha no processamento do arquivo.\n");
                 break;
             }
+            FILE *bin = fopen(binname, "wb");
 
             // registro de cabecalho inicial
             cabecalho rc = {'0', '0', '1', '2',
