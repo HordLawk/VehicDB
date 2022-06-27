@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "indice.h"
-#define TAM_TIPO1 97
+#include "utils.h"
 
 void escrever_indices(Indice *indices, int qtd, FILE *stream, char tipo){
     if (tipo == '1'){

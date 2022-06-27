@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "utils.h"
+#include "veiculo.h"
 
 void linebreak(FILE *stream){
 	char crlf = fgetc(stream);
@@ -68,4 +69,88 @@ char *scan_quote_string(){
 		strcpy(str, "");
 	}
 	return str;
+}
+
+void ler_campo(void *f){
+    char *campo;
+    scanf("%ms", &campo);
+    if (!strcmp(campo, "id")){
+        scanf("%d ", &((veiculo *)f)->id);
+    }
+    else if (!strcmp(campo, "ano")){
+        scanf("%d ", &((veiculo *)f)->ano);
+    }
+    else if (!strcmp(campo, "quantidade")){
+        scanf("%d ", &((veiculo *)f)->qtt);
+    }
+    else if (!strcmp(campo, "sigla")){
+        char *sigla = scan_quote_string();
+        strncpy(((veiculo *)f)->sigla, sigla, 2);
+        free(sigla);
+    }
+    else if (!strcmp(campo, "cidade")){
+        ((veiculo *)f)->cidade = scan_quote_string();
+    }
+    else if (!strcmp(campo, "marca")){
+        ((veiculo *)f)->marca = scan_quote_string();
+    }
+    else if (!strcmp(campo, "modelo")){
+        ((veiculo *)f)->modelo = scan_quote_string();
+    }
+    free(campo);
+}
+
+void ler_novo_campo(void *valores, void *campos){
+    char *campo, *valor;
+    scanf("%ms", &campo);
+    //printf("campo lido: %s\n", campo);
+    if (!strcmp(campo, "id")){
+        ((veiculo *)campos)->id = 1;
+        scanf("%ms", &valor);
+        if (strcmp(valor, "NULO") != 0) ((veiculo *)valores)->id = atoi(valor);
+    }
+    else if (!strcmp(campo, "ano")){
+        ((veiculo *)campos)->ano = 1;
+        scanf("%ms", &valor);
+        if (strcmp(valor, "NULO") != 0) ((veiculo *)valores)->ano = atoi(valor);
+    }
+    else if (!strcmp(campo, "qtt")){
+        ((veiculo *)campos)->qtt = 1;
+        scanf("%ms", &valor);
+        if (strcmp(valor, "NULO") != 0) ((veiculo *)valores)->qtt = atoi(valor);
+    }
+    else if (!strcmp(campo, "sigla")){
+        strncpy(((veiculo *)campos)->sigla, "11", 2);
+        valor = scan_quote_string();
+        if (strcmp(valor, "") != 0) strncpy(((veiculo *)valores)->sigla, valor, 2);
+    }
+    else if (!strcmp(campo, "cidade")){
+        ((veiculo *)campos)->cidade = malloc(2 * sizeof(char));
+        strcpy(((veiculo *)campos)->cidade, "1");
+        valor = scan_quote_string();
+        if (strcmp(valor, "") != 0){
+            ((veiculo *)valores)->cidade = realloc(((veiculo *)valores)->cidade, (strlen(valor) * sizeof(char)) + 1);
+            strcpy(((veiculo *)valores)->cidade, valor);
+        }
+    }
+    else if (!strcmp(campo, "marca")){
+        ((veiculo *)campos)->marca = malloc(2 * sizeof(char));
+        strcpy(((veiculo *)campos)->marca, "1");
+        valor = scan_quote_string();
+        if (strcmp(valor, "") != 0){
+            ((veiculo *)valores)->marca = realloc(((veiculo *)valores)->marca, (strlen(valor) * sizeof(char)) + 1);
+            strcpy(((veiculo *)valores)->marca, valor);
+        }
+    }
+    else if (!strcmp(campo, "modelo")){
+        ((veiculo *)campos)->modelo = malloc(2 * sizeof(char));
+        strcpy(((veiculo *)campos)->modelo, "1");
+        valor = scan_quote_string();
+        if (strcmp(valor, "") != 0){
+            ((veiculo *)valores)->modelo = realloc(((veiculo *)valores)->modelo, (strlen(valor) * sizeof(char)) + 1);
+            strcpy(((veiculo *)valores)->modelo, valor);
+        }
+    }
+    free(campo);
+    free(valor);
 }

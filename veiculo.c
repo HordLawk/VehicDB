@@ -165,7 +165,7 @@ long int filtrarVeiculo(FILE *stream, veiculo f, char tipo, veiculo *v, long int
     lido++;
     if(tipo == '1'){
         // para o tipo1 os registros tem sempre 97 bytes
-        tamRegistro = 97;
+        tamRegistro = TAM_TIPO1;
         if(removido == '1'){
             *next = tamRegistro - lido;
             return -1;
@@ -379,7 +379,7 @@ long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, cha
         int pos = busca_indices(indices, 0, qtd_ind, f.id);
         if(pos == -1) return -1;
         // calcula o offset do registro dependendo do tipo
-        long offset = (tipo == '1') ? 182 + ((Indice*)indices)[pos].RRN * 97 : ((Indice*)indices)[pos].byteOffset;
+        long offset = (tipo == '1') ? TAM_CAB1 + ((Indice*)indices)[pos].RRN * TAM_TIPO1 : ((Indice*)indices)[pos].byteOffset;
         // salva a posicao atual do ponteiro do arquivo de dados para poder voltar para ela no final da busca
         long cur = ftell(stream);
         fseek(stream, offset, SEEK_SET);
@@ -456,7 +456,7 @@ void remover_veiculo(FILE *bin, long cur, char tipo, void *rc){
         // se for tipo 1 escreve o RRN no topo da pilha no campo de proximo RRN deletado do registro
         fwrite(&((cabecalho *)rc)->topo1, sizeof(int), 1, bin);
         // substitui o topo da pilha pelo RRN do ultimo registro
-        ((cabecalho *)rc)->topo1 = (cur - 182) / 97;
+        ((cabecalho *)rc)->topo1 = (cur - TAM_CAB1) / TAM_TIPO1;
     }
     else if(tipo == '2'){
         int tam;
