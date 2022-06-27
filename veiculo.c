@@ -407,7 +407,7 @@ long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, cha
     return -1;
 }
 
-void atualizar_veiculo_1(veiculo *v, veiculo *valores, veiculo *campos){
+void atualizar_veiculo(veiculo *v, veiculo *valores, veiculo *campos){
     // valores de tamanho fixo
     if (campos->id != -1)  v->id = valores->id;
     if (campos->ano != -1) v->ano = valores->ano;
@@ -527,7 +527,7 @@ void inserir_veiculo(void *rc, FILE *bin, veiculo v){
         char lixo = '$';
         while (tamRegistro < tamTopo){
             fwrite(&lixo, sizeof(char), 1, bin);
-            tamRegistro++;
+            tamRegistro += sizeof(char);
         }
     }
 }

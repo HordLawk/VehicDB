@@ -28,11 +28,3 @@ int comparar_indices (const void *a, const void *b);
 parametros: ponteiro para arquivo de veiculos, ponteiro para arquivo de indices,
             tipo do arquivo de veiculos  */ 
 void criar_arquivo_indices(FILE *bin, FILE *ind, char *tipo);
-
-
-
-
-
-
-// apagar depois meu lindo bubble sort
-void ordenar_indices(Indice *indices, int qtd, char tipo);

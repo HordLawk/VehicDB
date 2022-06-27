@@ -57,7 +57,7 @@ long int buscar_veiculo(FILE *stream, void *indices, int qtd_ind, veiculo f, cha
 /* atualiza uma estrutura do tipo veiculo com novos dados entrados
 parametros: o veiculo para atualizar, os valores para serem definidos,
             uma estrutura veiculo indicando quais campos devem ser atualizados */
-void atualizar_veiculo_1(veiculo *v, veiculo *valores, veiculo *campos);
+void atualizar_veiculo(veiculo *v, veiculo *valores, veiculo *campos);
 
 /* marca um registro como logicamente removido
 parametros: ponteiro para o arquivo de dados, o offset do registro para ser removido, o tipo do arquivo de dados,

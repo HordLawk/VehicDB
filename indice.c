@@ -131,17 +131,3 @@ void criar_arquivo_indices(FILE *bin, FILE *ind, char *tipo){
     fseek(ind, 0, SEEK_SET);
     fwrite(&status, sizeof(char), 1, ind);
 }
-
-
-// meu bubble sort apagar dps
-void ordenar_indices(Indice *indices, int qtd, char tipo){
-    for (int i = 0; i < qtd - 1; i++){
-        for (int j = i + 1; j < qtd; j++){
-            if (indices[i].id >= indices[j].id){
-                Indice aux = indices[i];
-                indices[i] = indices[j];
-                indices[j] = aux;
-            }
-        }
-    }
-}

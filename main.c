@@ -133,7 +133,6 @@ int main(void){
                     qtd++;
                     fseek(bin, sizeof(int), SEEK_CUR);
                     veiculo v = ler_veiculo(bin, TAM_TIPO1 - sizeof(char) - sizeof(int));
-                    printf("%d\n", v.id);
                     mostrar_veiculo(v);
                     desalocar_veiculo(v);
                 }
@@ -361,12 +360,14 @@ int main(void){
             int qtd_ind = -1;
             Indice *indices = ler_indices(ind, &qtd_ind, tipo[4]);
 
-            // remocoes - por favor comentar
-            long int inicio;
+            long int inicio; // offset do inicio dos registros de dados
             if (tipo[4] == '1') inicio = TAM_CAB1;
             else if (tipo[4] == '2') inicio = TAM_CAB2;
+
             while (nRemocoes--){
                 fseek(bin, inicio, SEEK_SET);
+
+                // leitura dos criterios de remocao
                 int nCampos;
                 scanf("%d", &nCampos);
                 veiculo f = {-1, -1, -1, "$$", NULL, NULL, NULL};
@@ -564,12 +565,13 @@ int main(void){
                         ler_novo_campo(&valores, &campos);
                     }
 
+                    // busca e atualizacao dos veiculos
                     long int cur, next;
                     while (cur = buscar_veiculo(bin, indices, qtd_ind, filtro, tipo[4], &next), cur != -1){
                         fseek(bin, cur + sizeof(char) + sizeof(int), SEEK_SET);
                         veiculo v = ler_veiculo(bin, TAM_TIPO1);
 
-                        atualizar_veiculo_1(&v, &valores, &campos);
+                        atualizar_veiculo(&v, &valores, &campos);
                         fseek(bin, cur + sizeof(char) + sizeof(int), SEEK_SET);
                         escrever_veiculo(v, bin);
 
@@ -599,6 +601,7 @@ int main(void){
                     veiculo valores = {-1, -1, -1, "$$", NULL, NULL, NULL}; // valores que devem ser atualizados
                     veiculo campos = {-1, -1, -1, "$$", NULL, NULL, NULL}; // indica os campos que devem ser atualizados
 
+                    // leitura das atualizacoes
                     int nCamposBusca, nCamposAtualiza;
                     scanf("%d ", &nCamposBusca);
                     while (nCamposBusca--){
@@ -609,6 +612,7 @@ int main(void){
                         ler_novo_campo(&valores, &campos);
                     }
 
+                    // busca e atualizacao dos veiculos
                     long int cur, next;
                     while (cur = buscar_veiculo(bin, indices, qtd_ind, filtro, tipo[4], &next), cur != -1){
                         long end = ftell(bin);
@@ -620,8 +624,10 @@ int main(void){
                         fseek(bin, sizeof(long), SEEK_CUR);
 
                         veiculo v = ler_veiculo(bin, tam - sizeof(long));
-                        atualizar_veiculo_1(&v, &valores, &campos);
+                        atualizar_veiculo(&v, &valores, &campos);
                         int tamRegistro = calcular_tamanho(v) + sizeof(long);
+                        // se dados atualizados cabem no registro existente -> sobrescrever e
+                        // completar com lixo (se necessario)
                         if(tamRegistro <= tam){
                             fseek(bin, cur + sizeof(char) + sizeof(int) + sizeof(long), SEEK_SET);
                             escrever_veiculo(v, bin);
@@ -631,6 +637,7 @@ int main(void){
                                 tamRegistro += sizeof(char);
                             }
                         }
+                        // se dados atualizados nao cabem no registro existente -> remover e reinserir
                         else{
                             remover_veiculo(bin, cur, '2', &rc);
                             inserir_veiculo(&rc, bin, v);

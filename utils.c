@@ -103,7 +103,6 @@ void ler_campo(void *f){
 void ler_novo_campo(void *valores, void *campos){
     char *campo, *valor;
     scanf("%ms", &campo);
-    //printf("campo lido: %s\n", campo);
     if (!strcmp(campo, "id")){
         ((veiculo *)campos)->id = 1;
         scanf("%ms", &valor);
@@ -129,7 +128,7 @@ void ler_novo_campo(void *valores, void *campos){
         strcpy(((veiculo *)campos)->cidade, "1");
         valor = scan_quote_string();
         if (strcmp(valor, "") != 0){
-            ((veiculo *)valores)->cidade = realloc(((veiculo *)valores)->cidade, (strlen(valor) * sizeof(char)) + 1);
+            ((veiculo *)valores)->cidade = realloc(((veiculo *)valores)->cidade, ((strlen(valor) + 1) * sizeof(char)));
             strcpy(((veiculo *)valores)->cidade, valor);
         }
     }
@@ -138,7 +137,7 @@ void ler_novo_campo(void *valores, void *campos){
         strcpy(((veiculo *)campos)->marca, "1");
         valor = scan_quote_string();
         if (strcmp(valor, "") != 0){
-            ((veiculo *)valores)->marca = realloc(((veiculo *)valores)->marca, (strlen(valor) * sizeof(char)) + 1);
+            ((veiculo *)valores)->marca = realloc(((veiculo *)valores)->marca, ((strlen(valor) + 1) * sizeof(char)));
             strcpy(((veiculo *)valores)->marca, valor);
         }
     }
@@ -147,7 +146,7 @@ void ler_novo_campo(void *valores, void *campos){
         strcpy(((veiculo *)campos)->modelo, "1");
         valor = scan_quote_string();
         if (strcmp(valor, "") != 0){
-            ((veiculo *)valores)->modelo = realloc(((veiculo *)valores)->modelo, (strlen(valor) * sizeof(char)) + 1);
+            ((veiculo *)valores)->modelo = realloc(((veiculo *)valores)->modelo, ((strlen(valor) + 1) * sizeof(char)));
             strcpy(((veiculo *)valores)->modelo, valor);
         }
     }
