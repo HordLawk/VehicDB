@@ -15,6 +15,11 @@ void linebreak(FILE *stream);
 /* le uma string entre aspas na entrada padrao; retorna string */
 char *scan_quote_string();
 
+/* le um campo entrado pelo usuario e registra em uma estrutura veiculo
+parametros: estrutura de veiculo para guardar os dados (modificada por referencia) */
 void ler_campo(void *f);
 
+/* le um campo que e registra que esse campo deve ser considerado em uma atualizacao
+parametros: estrutura veiculo para guardar os valores dos campos (modificada por referencia),
+            estrutura veiculo para indicar se um campo deve ser considerado ou nao (modificada por referencia) */
 void ler_novo_campo(void *valores, void *campos);
