@@ -700,6 +700,55 @@ int main(void){
             binarioNaTela(indname);
         }
         break;
+
+        /* Funcionalidade 9:
+        criar arquivo de indice arvore-B a partir de um arquivo de dados */
+        case 9:{
+            // leitura do comando e abertura dos arquivos
+            scanf("%ms %ms %ms", &tipo, &binname, &indname);
+            FILE *bin = fopen(binname, "rb");
+            FILE *ind = fopen(indname, "wb");
+            if (bin == NULL){
+                printf("Falha no processamento do arquivo.\n");
+                fclose(bin);
+                fclose(ind);
+                break;
+            }
+            
+            // verificacao do status do arquivo
+            cabecalho rc = ler_cabecalho(bin, tipo[4]);
+            if (rc.status == '0'){
+                printf("Falha no processamento do arquivo.\n");
+                fclose(bin);
+                fclose(ind);
+                break;
+            }
+            // para cada registro lido do arquivo
+                // verificar se foi removido
+                // inserir na arvore b
+
+            // execucao da funcionalidade
+            criar_arquivo_indices(bin, ind, tipo);
+
+            fclose(bin);
+            fclose(ind);
+            binarioNaTela(indname);
+        }
+        break;
+
+        /* Funcionalidade 10:
+        recuperacao de registros que satisfazem criterios de busca, usando indice arvore-B */
+        case 10:{
+
+        }
+        break;
+
+        /* Funcionalidade 11:
+        insercao de um novo registro no arquivo de dados (e indice arvore-B) */
+        case 11:{
+
+        }
+        break;
     }
 
     if (tipo) free(tipo);
