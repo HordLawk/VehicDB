@@ -796,7 +796,7 @@ int main(void){
             FILE *bin = fopen(binname, "rb");
             FILE *ind = fopen(indname, "rb");
             cabecalho rc;
-            Cabecalho_b cabInd;
+            cabecalho_arvb rc_ind;
             if(
                 (bin == NULL)
                 ||
@@ -804,7 +804,7 @@ int main(void){
                 ||
                 ((rc = ler_cabecalho(bin, tipo[4])).status == '0')
                 ||
-                ((cabInd = ler_cabecalho_b(ind, tipo[4])).status == '0')
+                ((rc_ind = ler_cabecalho_arvb(ind)).status == '0')
             ){
                 printf("Falha no processamento do arquivo.\n");
                 if(bin) fclose(bin);
@@ -812,7 +812,7 @@ int main(void){
                 break;
             }
 
-            if(cabInd.noRaiz == -1){
+            if(rc_ind.noRaiz == -1){
                 printf("Registro inexistente.\n");
                 fclose(bin);
                 fclose(ind);
@@ -820,9 +820,9 @@ int main(void){
             }
 
             char tamNo = tipo[4] == '1' ? TAM_ARVB1 : TAM_ARVB2;
-            fseek(ind, (cabInd.noRaiz + 1) * tamNo, SEEK_SET);
-            Indice_b raiz = ler_indice_b(ind, tipo[4]);
-            long offset = tipo[4] == '1' ? (buscar_indice_b1(ind, raiz, id) * TAM_TIPO1) + TAM_CAB1 : buscar_indice_b2(ind, raiz, id);
+            fseek(ind, (rc_ind.noRaiz + 1) * tamNo, SEEK_SET);
+            no_arvb raiz = ler_no_arvb(ind, tipo[4]);
+            long offset = tipo[4] == '1' ? (buscar_arvb1(ind, raiz, id) * TAM_TIPO1) + TAM_CAB1 : buscar_arvb2(ind, raiz, id);
             if(offset < TAM_CAB1){
                 printf("Registro inexistente.\n");
                 fclose(bin);

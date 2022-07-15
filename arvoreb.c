@@ -3,6 +3,25 @@
 #include <string.h>
 #include "arvoreb.h"
 
+cabecalho_arvb ler_cabecalho_arvb(FILE *stream){
+    cabecalho_arvb cab;
+    fread(&cab.status, sizeof(char), 1, stream);
+    fread(&cab.noRaiz, sizeof(int), 1, stream);
+    fread(&cab.proxRRN, sizeof(int), 1, stream);
+    fread(&cab.nroNos, sizeof(int), 1, stream);
+    return cab;
+}
+
+void escrever_cabecalho_arvb(cabecalho_arvb cab, FILE *stream, char tipo){
+    fwrite(&cab.status, sizeof(char), 1, stream);
+    fwrite(&cab.noRaiz, sizeof(int), 1, stream);
+    fwrite(&cab.proxRRN, sizeof(int), 1, stream);
+    fwrite(&cab.nroNos, sizeof(int), 1, stream);
+    int tamLixo = (tipo == '1' ? TAM_ARVB1 : TAM_ARVB2) - 13;
+    char lixo = '$';
+    while(tamLixo--) fwrite(&lixo, sizeof(char), 1, stream);
+}
+
 no_arvb ler_no_arvb(FILE *stream, char tipo){
     no_arvb no;
     fread(&no.tipo, sizeof(char), 1, stream);
@@ -44,68 +63,44 @@ void escrever_no_arvb(FILE *stream, no_arvb no, char tipo){
         fwrite(&no.desc[i], sizeof(int), 1, stream);
 }
 
-/*
-// nao gostei das variaiveis serem i, id, ind todos nomes iguais
-int buscar_indice_b1(FILE *stream, Indice_b ind, int id){
+int buscar_arvb1(FILE *stream, no_arvb atual, int id){
     int i = 0;
-    while (i < ind.nro_chaves && id > ind.chaves[i].id)
+    while (i < atual.nro_chaves && id > atual.chaves[i].id)
         i++;
-
     // encontrou o id procurado
-    if (i < ind.nro_chaves && id == ind.chaves[i].id){
-        return ind.chaves[i].RRN;
+    if (i < atual.nro_chaves && id == atual.chaves[i].id){
+        return atual.chaves[i].RRN;
     }
     // nao encontrou o id e nao tem mais descendentes
-    else if (ind.tipo == '2'){
+    else if (atual.tipo == '2'){
         return -1;
     }
     // procurar id no descendente
     else{
-        fseek(stream, ((ind.desc[i]+1) * TAM_ARVB1), SEEK_SET);
-        Indice_b ind2 = ler_indice_b(stream, '1');
-        return buscar_indice_b1(stream, ind2, id);
+        fseek(stream, ((atual.desc[i]+1) * TAM_ARVB1), SEEK_SET);
+        no_arvb desc = ler_no_arvb(stream, '1');
+        return buscar_arvb1(stream, desc, id);
     }
 }
 
-long buscar_indice_b2(FILE *stream, Indice_b ind, int id){
+long buscar_arvb2(FILE *stream, no_arvb atual, int id){
     int i = 0;
-    while (i < ind.nro_chaves && id > ind.chaves[i].id)
+    while (i < atual.nro_chaves && id > atual.chaves[i].id)
         i++;
-
     // encontrou o id procurado
-    if (i < ind.nro_chaves && id == ind.chaves[i].id){
-        return ind.chaves[i].byteOffset;
+    if (i < atual.nro_chaves && id == atual.chaves[i].id){
+        return atual.chaves[i].byteOffset;
     }
     // nao encontrou o id e nao tem mais descendentes
-    else if (ind.tipo == '2'){
+    else if (atual.tipo == '2'){
         return -1;
     }
     // procurar id no descendente
     else{
-        fseek(stream, ((ind.desc[i]+1) * TAM_ARVB2), SEEK_SET);
-        Indice_b ind2 = ler_indice_b(stream, '2');
-        return buscar_indice_b2(stream, ind2, id);
+        fseek(stream, ((atual.desc[i]+1) * TAM_ARVB2), SEEK_SET);
+        no_arvb desc = ler_no_arvb(stream, '2');
+        return buscar_arvb2(stream, desc, id);
     }
-}
-*/
-
-void escrever_cabecalho_arvb(cabecalho_arvb cab, FILE *stream, char tipo){
-    fwrite(&cab.status, sizeof(char), 1, stream);
-    fwrite(&cab.noRaiz, sizeof(int), 1, stream);
-    fwrite(&cab.proxRRN, sizeof(int), 1, stream);
-    fwrite(&cab.nroNos, sizeof(int), 1, stream);
-    int tamLixo = (tipo == '1' ? TAM_ARVB1 : TAM_ARVB2) - 13;
-    char lixo = '$';
-    while(tamLixo--) fwrite(&lixo, sizeof(char), 1, stream);
-}
-
-cabecalho_arvb ler_cabecalho_arvb(FILE *stream){
-    cabecalho_arvb cab;
-    fread(&cab.status, sizeof(char), 1, stream);
-    fread(&cab.noRaiz, sizeof(int), 1, stream);
-    fread(&cab.proxRRN, sizeof(int), 1, stream);
-    fread(&cab.nroNos, sizeof(int), 1, stream);
-    return cab;
 }
 
 int insercao(FILE *stream, cabecalho_arvb *cab, int RRN_atual, Indice chave, Indice *promo_chave, int *promo_desc_dir, char tipo){

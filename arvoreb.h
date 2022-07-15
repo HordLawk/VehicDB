@@ -5,16 +5,12 @@
 #define TAM_ARVB1 45
 #define TAM_ARVB2 57
 
-/** seguinte vou mudar o nome de todas as variaveis Indice_b = no_arvb cabecalho_b = cabecalho_arvb . acho que so 
-e consequentemente algumas funcoes **/
-
-// FUNCOES QUE NAO USO E NAO QUERO MEXER MAS AJEITO DPS PRA FICAR IGUAL SE NECESSARIO
-// -----------------------
-//int buscar_indice_b1(FILE *stream, Indice_b ind, int id);
-//long buscar_indice_b2(FILE *stream, Indice_b ind, int id);
-//void inserir_indice_b(FILE *stream, Indice ind, char tipo);
-//Indice_b *alg_insercao_b(FILE *stream, Indice_b *no, Indice ind, char tipo, Cabecalho_b *cabecalho);
-// -----------------------
+/* struct com os dados de um cabecalho de arvore b; armazena o status do arquivo,
+o RRN do nó raiz, o prox RRN disponivel e o numero de nós da arvore */
+typedef struct cabecalho_arvb{
+    char status;
+    int noRaiz, proxRRN, nroNos;
+} cabecalho_arvb;
 
 /* struct com os dados de um nó de arvore b; armazena o tipo do nó,
 o numero de chaves, suas chaves e seus descendentes */
@@ -25,12 +21,14 @@ typedef struct no_arvb{
     int desc[ORDEM + 1]; 
 } no_arvb;
 
-/* struct com os dados de um cabecalho de arvore b; armazena o status do arquivo,
-o RRN do nó raiz, o prox RRN disponivel e o numero de nós da arvore */
-typedef struct cabecalho_arvb{
-    char status;
-    int noRaiz, proxRRN, nroNos;
-} cabecalho_arvb;
+/* le os dados de um cabecalho de arquivo de arvore b; retorna cabecalho lido
+parametros: ponteiro para arquivo */
+cabecalho_arvb ler_cabecalho_arvb(FILE *stream);
+
+/* escreve os dados de um cabecalho de arquivo de arvore b em um arquivo,
+parametros: cabecalho a ser escrito, ponteiro para arquivo,
+            tipo do arquivo de veiculos indexado */
+void escrever_cabecalho_arvb(cabecalho_arvb cab, FILE *stream, char tipo);
 
 /* le os dados de um nó de arvore b de um arquivo; retorna nó lido
 parametros: ponteiro para arquivo, tipo do arquivo de veiculos indexado pela arvore b */
@@ -41,15 +39,19 @@ parametros: ponteiro para arquivo, nó a ser escrito,
             tipo do arquivo de veiculos indexado */
 void escrever_no_arvb(FILE *stream, no_arvb no, char tipo);
 
-/* le os dados de um cabecalho de arquivo de arvore b; retorna cabecalho lido
-parametros: ponteiro para arquivo */
-cabecalho_arvb ler_cabecalho_arvb(FILE *stream);
+/* realiza recursivamente a busca de um id em um arquivo de indices arvore b,
+usado para arquivos de indice que indexam arquivos de veiculo tipo 1;
+retorna RRN relativo ao id procurado, ou -1 se nao encontrar;
+parametros: ponteiro para arquivo de indices, nó da arvore b em que deve ser buscado,
+            id desejado */
+int buscar_arvb1(FILE *stream, no_arvb atual, int id);
 
-/* escreve os dados de um cabecalho de arquivo de arvore b em um arquivo,
-parametros: cabecalho a ser escrito, ponteiro para arquivo,
-            tipo do arquivo de veiculos indexado */
-void escrever_cabecalho_arvb(cabecalho_arvb cab, FILE *stream, char tipo);
-
+/* realiza recursivamente a busca de um id em um arquivo de indices arvore b,
+usado para arquivos de indice que indexam arquivos de veiculo tipo 2;
+retorna byteOffset relativo ao id procurado, ou -1 se nao encontrar;
+parametros: ponteiro para arquivo de indices, nó da arvore b em que deve ser buscado,
+            id desejado */
+long buscar_arvb2(FILE *stream, no_arvb atual, int id);
 
 /* cria um novo no de arvore b, com todos os valores, chaves e filhos nulos;
 retorna no criado */
