@@ -1,8 +1,8 @@
 /* struct com os dados de um indice, armazena
 o id de um veiculo e seu RRN/byteOffset */ 
 typedef struct Indice{
-    unsigned int id, RRN;
-    unsigned long byteOffset;
+    int id, RRN;
+    long long byteOffset;
 } Indice;
 
 /* escreve os dados dos indices em um arquivo binario

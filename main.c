@@ -4,7 +4,7 @@
 #include "veiculo.h"
 #include "utils.h"
 #include "cabecalho.h"
-#include "indice.h"
+#include "arvoreb.h"
 
 int main(void){
     char *tipo = NULL, *csvname = NULL, *binname = NULL, *indname = NULL;
@@ -707,7 +707,7 @@ int main(void){
             // leitura do comando e abertura dos arquivos
             scanf("%ms %ms %ms", &tipo, &binname, &indname);
             FILE *bin = fopen(binname, "rb");
-            FILE *ind = fopen(indname, "wb");
+            FILE *ind = fopen(indname, "wb+");
             if (bin == NULL){
                 printf("Falha no processamento do arquivo.\n");
                 fclose(bin);
@@ -723,12 +723,63 @@ int main(void){
                 fclose(ind);
                 break;
             }
-            // para cada registro lido do arquivo
-                // verificar se foi removido
-                // inserir na arvore b
 
-            // execucao da funcionalidade
-            criar_arquivo_indices(bin, ind, tipo);
+            Cabecalho_b cab = {'0', -1, 0, 0};
+            escrever_cabecalho_b(cab, ind, tipo[4]);
+
+            // se tipo selecionado for "tipo1"
+            if (strcmp(tipo, "tipo1") == 0){
+                // leitura dos registros
+                int RRN = -1;
+                char removido;
+                while (fread(&removido, sizeof(char), 1, bin), !feof(bin)){
+                    RRN++;
+                    // verificar se registro foi removido
+                    if (removido == '1'){
+                        fseek(bin, TAM_TIPO1 - sizeof(char), SEEK_CUR);
+                        continue;
+                    }
+                    fseek(bin, sizeof(int), SEEK_CUR);
+
+                    Indice aux;
+                    fread(&aux.id, sizeof(int), 1, bin);
+                    aux.RRN = RRN;
+                    driver(ind, &cab, aux, '1');
+
+                    // mover ponteiro para proximo registro
+                    fseek(bin, TAM_TIPO1 - sizeof(char) - (2 * sizeof(int)), SEEK_CUR);
+                }
+            }
+            // se tipo selecionado for "tipo2"
+            else if (strcmp(tipo, "tipo2") == 0){
+                // leitura dos registros
+                char removido;
+                while (fread(&removido, sizeof(char), 1, bin), !feof(bin)){
+                    // verificar se registro foi removido
+                    int tamRegistro;
+                    fread(&tamRegistro, sizeof(int), 1, bin);
+                    if (removido == '1'){
+                        fseek(bin, tamRegistro, SEEK_CUR);
+                        continue;
+                    }
+                    fseek(bin, sizeof(long), SEEK_CUR);
+
+                    // criar indice que representa registro lido
+                    long proxByteOffset = ftell(bin) - sizeof(char) - sizeof(int) - sizeof(long);
+                    Indice aux;
+                    aux.byteOffset = proxByteOffset;
+                    fread(&aux.id, sizeof(int), 1, bin);
+
+                    driver(ind, &cab, aux, '2');
+
+                    // mover ponteiro para proximo registro
+                    fseek(bin, tamRegistro - sizeof(int) - sizeof(long), SEEK_CUR); 
+                }
+            }
+
+            cab.status = '1';
+            fseek(ind, 0, SEEK_SET);
+            escrever_cabecalho_b(cab, ind, tipo[4]);
 
             fclose(bin);
             fclose(ind);
@@ -746,7 +797,151 @@ int main(void){
         /* Funcionalidade 11:
         insercao de um novo registro no arquivo de dados (e indice arvore-B) */
         case 11:{
+            int nInsercoes;
+            scanf("%ms %ms %ms %d", &tipo, &binname, &indname, &nInsercoes);
+            FILE *bin = fopen(binname, "rb+");
+            FILE *ind = fopen(indname, "rb+");
+            if (bin == NULL || ind == NULL){
+                printf("Falha no processamento do arquivo.\n");
+                if (bin != NULL) fclose(bin);
+                if (ind != NULL) fclose(ind);
+                break;
+            }
 
+            // verificacao dos status dos arquivos
+            Cabecalho_b rc_i = ler_cabecalho_b(ind, tipo[4]);
+            cabecalho rc = ler_cabecalho(bin, tipo[4]);
+            if (rc.status == '0' || rc_i.status == '0'){
+                printf("Falha no processamento do arquivo.\n");
+                fclose(bin);
+                fclose(ind);
+                break;
+            }
+            // indicar que arquivos de dados estao sendo alterados
+            char status = '0';
+            fseek(ind, 0, SEEK_SET);
+            fwrite(&status, sizeof(char), 1, ind);
+            fseek(bin, 0, SEEK_SET);
+            fwrite(&status, sizeof(char), 1, bin);
+
+            // se tipo selecionado for "tipo1"
+            if (strcmp(tipo, "tipo1") == 0){
+                // leitura e insercao dos veiculos
+                while (nInsercoes--){
+                    veiculo v = ler_novo_veiculo(stdin);
+                    printf("insercao: topo = %d, proxrrn = %d;\n", rc.topo1, rc.proxRRN);
+                    mostrar_veiculo(v);
+                    
+                    Indice aux;
+                    aux.id = v.id;
+
+                    char removido = '0';
+                    int prox = -1;
+                    // nao existem registros removidos -> inserir no prox RRN disponivel
+                    if (rc.topo1 == -1){
+                        aux.RRN = rc.proxRRN;
+                        fseek(bin, TAM_CAB1 + (rc.proxRRN * TAM_TIPO1), SEEK_SET);
+                        fwrite(&removido, sizeof(char), 1, bin);
+                        fwrite(&prox, sizeof(int), 1, bin);
+                        escrever_veiculo(v, bin);
+                        rc.proxRRN++;
+                    }
+                    // existe registro removido -> inserir no RRN topo da pilha de removidos
+                    else{
+                        aux.RRN = rc.topo1;
+                        fseek(bin, TAM_CAB1 + (rc.topo1 * TAM_TIPO1), SEEK_SET);
+                        fwrite(&removido, sizeof(char), 1, bin);
+                        fread(&rc.topo1, sizeof(int), 1, bin); // novo topo: proximo do topo atual
+                        fseek(bin, 0 - sizeof(int), SEEK_CUR);
+                        fwrite(&prox, sizeof(int), 1, bin);
+                        escrever_veiculo(v, bin);
+                        rc.nroRegRem--;
+                    }
+
+                    // preencher resto do registro com lixo
+                    int tamRegistro = sizeof(char) + sizeof(int) + calcular_tamanho(v);
+                    char lixo = '$';
+                    while (tamRegistro < TAM_TIPO1){
+                        fwrite(&lixo, sizeof(char), 1, bin);
+                        tamRegistro += sizeof(char);
+                    }
+
+                    desalocar_veiculo(v);
+
+                    driver(ind, &rc_i, aux, '1');
+                }
+                fseek(bin, TAM_CAB1, SEEK_SET); // ponteiro no inicio dos registros
+            }
+
+            // se tipo selecionado for "tipo2"
+            else if (strcmp(tipo, "tipo2") == 0){
+                // leitura e insercao dos veiculos
+                while (nInsercoes--){
+                    veiculo v = ler_novo_veiculo(stdin);
+
+                    Indice aux;
+                    aux.id = v.id;
+                    
+                    int tamTopo = -1;
+                    char removido = '0';
+                    long prox = -1;
+                    if (rc.topo2 != -1){
+                        fseek(bin, rc.topo2 + 1, SEEK_SET);
+                        fread(&tamTopo, sizeof(int), 1, bin);
+                    }
+                    int tamRegistro = sizeof(long) + calcular_tamanho(v);
+                    // nao existem registros removidos ou espaco insuficiente -> escrever no fim do arquivo
+                    if (rc.topo2 == -1 || tamRegistro > tamTopo){
+                        aux.byteOffset = rc.proxByteOffset;
+                        fseek(bin, rc.proxByteOffset, SEEK_SET);
+                        fwrite(&removido, sizeof(char), 1, bin);
+                        fwrite(&tamRegistro, sizeof(int), 1, bin);
+                        fwrite(&prox, sizeof(long), 1, bin);
+                        escrever_veiculo(v, bin);
+                        rc.proxByteOffset += sizeof(char) + sizeof(int) + tamRegistro;
+                    }
+                    // existe registro removido com espaco suficiente -> escrever no byteOffset
+                    else{
+                        aux.byteOffset = rc.topo2;
+                        fseek(bin, rc.topo2, SEEK_SET);
+                        fwrite(&removido, sizeof(char), 1, bin);
+                        fseek(bin, 4, SEEK_CUR);
+                        fread(&rc.topo2, sizeof(long), 1, bin);
+                        fseek(bin, -8, SEEK_CUR);
+                        fwrite(&prox, sizeof(long), 1, bin);
+                        escrever_veiculo(v, bin);
+                        rc.nroRegRem--;
+                        
+                        // preencher resto do registro com lixo
+                        char lixo = '$';
+                        while (tamRegistro < tamTopo){
+                            fwrite(&lixo, sizeof(char), 1, bin);
+                            tamRegistro += sizeof(char);
+                        }
+                    }
+
+                    driver(ind, &rc_i, aux, '2');
+
+                    desalocar_veiculo(v);
+                }
+                fseek(bin, TAM_CAB2, SEEK_SET); // ponteiro no inicio dos registros
+            }
+
+            // atualizar arquivo de indices
+            //fclose(ind);
+            //ind = fopen(indname, "wb");
+            //criar_arquivo_indices(bin, ind, tipo);
+
+            // atualizar cabecalho do registro de dados
+            fseek(bin, 0, SEEK_SET);
+            escrever_cabecalho(rc, bin, tipo[4]);
+            fseek(ind, 0, SEEK_SET);
+            escrever_cabecalho_b(rc_i, ind, tipo[4]);
+
+            fclose(bin);
+            fclose(ind);
+            binarioNaTela(binname);
+            binarioNaTela(indname);
         }
         break;
     }
