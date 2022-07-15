@@ -790,7 +790,73 @@ int main(void){
         /* Funcionalidade 10:
         recuperacao de registros que satisfazem criterios de busca, usando indice arvore-B */
         case 10:{
+            // leitura do comando e abertura dos arquivos
+            int id;
+            scanf("%ms %ms %ms id %d", &tipo, &binname, &indname, &id);
+            FILE *bin = fopen(binname, "rb");
+            FILE *ind = fopen(indname, "rb");
+            cabecalho rc;
+            Cabecalho_b cabInd;
+            if(
+                (bin == NULL)
+                ||
+                (ind == NULL)
+                ||
+                ((rc = ler_cabecalho(bin, tipo[4])).status == '0')
+                ||
+                ((cabInd = ler_cabecalho_b(ind, tipo[4])).status == '0')
+            ){
+                printf("Falha no processamento do arquivo.\n");
+                if(bin) fclose(bin);
+                if(ind) fclose(ind);
+                break;
+            }
 
+            if(cabInd.noRaiz == -1){
+                printf("Registro inexistente.\n");
+                fclose(bin);
+                fclose(ind);
+                break;
+            }
+
+            char tamNo = tipo[4] == '1' ? TAM_ARVB1 : TAM_ARVB2;
+            fseek(ind, (cabInd.noRaiz + 1) * tamNo, SEEK_SET);
+            Indice_b raiz = ler_indice_b(ind, tipo[4]);
+            long offset = tipo[4] == '1' ? (buscar_indice_b1(ind, raiz, id) * TAM_TIPO1) + TAM_CAB1 : buscar_indice_b2(ind, raiz, id);
+            if(offset < TAM_CAB1){
+                printf("Registro inexistente.\n");
+                fclose(bin);
+                fclose(ind);
+                break;
+            }
+            fseek(bin, offset, SEEK_SET);
+            char removido = fgetc(bin);
+            if(removido == '1'){
+                printf("Registro inexistente.\n");
+                fclose(bin);
+                fclose(ind);
+                break;
+            }
+            veiculo v;
+            switch(tipo[4]){
+                case '1': {
+                    fseek(bin, sizeof(int), SEEK_CUR);
+                    v = ler_veiculo(bin, TAM_TIPO1 - (sizeof(char) + sizeof(int)));
+                }
+                break;
+                case '2': {
+                    int tamReg;
+                    fread(&tamReg, sizeof(int), 1, bin);
+                    fseek(bin, sizeof(long), SEEK_CUR);
+                    v = ler_veiculo(bin, tamReg - sizeof(long));
+                }
+                break;
+            }
+            mostrar_veiculo(v);
+            desalocar_veiculo(v);
+
+            fclose(bin);
+            fclose(ind);
         }
         break;
 
