@@ -2,7 +2,7 @@
 o id de um veiculo e seu RRN/byteOffset */ 
 typedef struct Indice{
     int id, RRN;
-    long long byteOffset;
+    long byteOffset;
 } Indice;
 
 /* escreve os dados dos indices em um arquivo binario
