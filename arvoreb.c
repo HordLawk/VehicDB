@@ -95,9 +95,7 @@ long buscar_indice_b2(FILE *stream, Indice_b ind, int id){
 
 void inserir_indice_b(FILE *stream, Indice ind, char tipo, Cabecalho_b *rc){
     unsigned char tamNo = tipo == '1' ? TAM_ARVB1 : TAM_ARVB2;
-    printf("cinco: %d %d\n", rc->noRaiz, tamNo);
     if(rc->noRaiz == -1){
-        printf("seis\n");
         Indice_b ind_b;
         ind_b.tipo = '0';
         ind_b.nro_chaves = 1;
@@ -106,18 +104,14 @@ void inserir_indice_b(FILE *stream, Indice ind, char tipo, Cabecalho_b *rc){
         for(int i = 0; i <= ORDEM; i++) ind_b.desc[i] = -1;
         fseek(stream, tamNo, SEEK_SET);
         escrever_indice_b(stream, ind_b, tipo);
-        printf("sete\n");
         rc->noRaiz = 0;
         rc->proxRRN = 1;
         rc->nroNos = 1;
-        printf("oito\n");
         return;
     }
     fseek(stream, ((rc->noRaiz + 1) * tamNo), SEEK_SET);
     Indice_b raiz = ler_indice_b(stream, tipo);
-    printf("nove\n");
     Indice_b *novoNo = alg_insercao_b(stream, &raiz, ind, tipo, rc);
-    printf("dez\n");
     if(!novoNo) return;
     raiz.tipo = rc->nroNos == 1 ? '2' : '1';
     Indice promovido = raiz.chaves[raiz.nro_chaves];
@@ -146,7 +140,6 @@ Indice_b *alg_insercao_b(FILE *stream, Indice_b *no, Indice ind, char tipo, Cabe
     char tamNo = tipo == '1' ? TAM_ARVB1 : TAM_ARVB2;
     int i = 0;
     while (i < no->nro_chaves && ind.id > no->chaves[i].id) i++;
-    printf("onze %c %d %d %d", no->tipo, i, no->nro_chaves, c->proxRRN);
     if ((no->tipo == '2') || ((no->tipo == '0') && (c->nroNos == 1))){
         for(int j = (ORDEM - 1); j > i; j--) no->chaves[j] = no->chaves[j - 1];
         no->chaves[i] = ind;

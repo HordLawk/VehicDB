@@ -10,7 +10,6 @@ int main(void){
     char *tipo = NULL, *csvname = NULL, *binname = NULL, *indname = NULL;
     int cmd;
     scanf("%d ", &cmd);
-    printf("uma\n");
     switch (cmd){
         /* funcionalidade 1:
         leitura de varios registros em arquivo csv e escrita em arquivo binario */
