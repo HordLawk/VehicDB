@@ -4,12 +4,13 @@
 #include "veiculo.h"
 #include "utils.h"
 #include "cabecalho.h"
-#include "indice.h"
+#include "arvoreb.h"
 
 int main(void){
     char *tipo = NULL, *csvname = NULL, *binname = NULL, *indname = NULL;
     int cmd;
     scanf("%d ", &cmd);
+    printf("uma\n");
     switch (cmd){
         /* funcionalidade 1:
         leitura de varios registros em arquivo csv e escrita em arquivo binario */
@@ -707,11 +708,11 @@ int main(void){
             // leitura do comando e abertura dos arquivos
             scanf("%ms %ms %ms", &tipo, &binname, &indname);
             FILE *bin = fopen(binname, "rb");
-            FILE *ind = fopen(indname, "wb");
+            FILE *indStream = fopen(indname, "wb");
             if (bin == NULL){
                 printf("Falha no processamento do arquivo.\n");
                 fclose(bin);
-                fclose(ind);
+                fclose(indStream);
                 break;
             }
             
@@ -720,18 +721,69 @@ int main(void){
             if (rc.status == '0'){
                 printf("Falha no processamento do arquivo.\n");
                 fclose(bin);
-                fclose(ind);
+                fclose(indStream);
                 break;
             }
-            // para cada registro lido do arquivo
-                // verificar se foi removido
-                // inserir na arvore b
 
-            // execucao da funcionalidade
-            criar_arquivo_indices(bin, ind, tipo);
+            Cabecalho_b cb = {
+                '1',
+                -1,
+                0,
+                0,
+            };
+            escrever_cabecalho_b(cb, indStream, tipo[4]);
+            fclose(indStream);
+            indStream = fopen(indname, "rb+");
+            fseek(indStream, 0, SEEK_SET);
+            cb.status = '0';
+            fwrite(&cb.status, sizeof(char), 1, indStream);
+            
+            switch(tipo[4]){
+                case '1': {
+                    char removido;
+                    while(removido = fgetc(bin), !feof(bin)){
+                        if(removido == '1'){
+                            fseek(bin, TAM_TIPO1 - sizeof(char), SEEK_CUR);
+                            continue;
+                        }
+                        int rrn = (ftell(bin) - (sizeof(char) + TAM_CAB1)) / TAM_TIPO1;
+                        fseek(bin, sizeof(int), SEEK_CUR);
+                        veiculo v = ler_veiculo(bin, TAM_TIPO1 - (sizeof(char) + sizeof(int)));
+                        Indice ind;
+                        ind.id = v.id;
+                        ind.RRN = rrn;
+                        printf("indice %d %d\n", v.id, rrn);
+                        inserir_indice_b(indStream, ind, '1', &cb);
+                    }
+                }
+                break;
+                case '2': {
+                    char removido;
+                    while(removido = fgetc(bin), !feof(bin)){
+                        long offset = ftell(bin) - sizeof(char);
+                        int tamReg;
+                        fread(&tamReg, sizeof(int), 1, bin);
+                        if(removido == '1'){
+                            fseek(bin, tamReg, SEEK_CUR);
+                            continue;
+                        }
+                        fseek(bin, sizeof(long), SEEK_CUR);
+                        veiculo v = ler_veiculo(bin, tamReg - sizeof(long));
+                        Indice ind;
+                        ind.id = v.id;
+                        ind.byteOffset = offset;
+                        inserir_indice_b(indStream, ind, '2', &cb);
+                    }
+                }
+                break;
+            }
+
+            cb.status = '1';
+            fseek(indStream, 0, SEEK_SET);
+            escrever_cabecalho_b(cb, indStream, tipo[4]);
 
             fclose(bin);
-            fclose(ind);
+            fclose(indStream);
             binarioNaTela(indname);
         }
         break;
@@ -746,7 +798,7 @@ int main(void){
         /* Funcionalidade 11:
         insercao de um novo registro no arquivo de dados (e indice arvore-B) */
         case 11:{
-
+            
         }
         break;
     }

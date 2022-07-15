@@ -23,8 +23,8 @@ Indice_b ler_indice_b(FILE *stream, char tipo);
 void escrever_indice_b(FILE *stream, Indice_b ind, char tipo);
 int buscar_indice_b1(FILE *stream, Indice_b ind, int id);
 long buscar_indice_b2(FILE *stream, Indice_b ind, int id);
-void inserir_indice_b(FILE *stream, Indice ind, char tipo);
-Indice_b *alg_insercao_b(FILE *stream, Indice_b *no, Indice ind, char tipo, Cabecalho_b *cabecalho);
+void inserir_indice_b(FILE *stream, Indice ind, char tipo, Cabecalho_b *rc);
+Indice_b *alg_insercao_b(FILE *stream, Indice_b *no, Indice ind, char tipo, Cabecalho_b *c);
 void escrever_cabecalho_b(Cabecalho_b c, FILE *stream, char tipo);
 Cabecalho_b ler_cabecalho_b(FILE *stream, char tipo);
 #endif
