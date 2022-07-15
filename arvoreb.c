@@ -119,14 +119,13 @@ int insercao(FILE *stream, cabecalho_arvb *cab, int RRN_atual, Indice chave, Ind
 
         // encontrar posicao adequada da chave no nó atual
         int pos = 0;
-        while (pos < atual.nro_chaves - 1 && chave.id > atual.chaves[pos].id)
+        while (pos < atual.nro_chaves && chave.id > atual.chaves[pos].id)
             pos++;
-        if (pos == 0 && chave.id < atual.chaves[pos].id) pos = -1;
         
         // inserir a chave no filho adequado
         int retorno_RRN;
         Indice retorno_chave;
-        int retorno = insercao(stream, cab, atual.desc[pos+1], chave, &retorno_chave, &retorno_RRN, tipo);
+        int retorno = insercao(stream, cab, atual.desc[pos], chave, &retorno_chave, &retorno_RRN, tipo);
         
         // nao houve promocao -> apenas retornar a recursao
         if (retorno == 0)
@@ -135,14 +134,14 @@ int insercao(FILE *stream, cabecalho_arvb *cab, int RRN_atual, Indice chave, Ind
         else{ 
             // tem espaco -> inserir no nó atual na posicao adequada
             if (atual.nro_chaves < ORDEM-1){
-                int pos = atual.nro_chaves - 1;
-                while (pos >= 0 && retorno_chave.id < atual.chaves[pos].id){
-                    atual.chaves[pos+1] = atual.chaves[pos];
-                    atual.desc[pos+2] = atual.desc[pos+1];
+                int pos = atual.nro_chaves;
+                while (pos > 0 && retorno_chave.id < atual.chaves[pos-1].id){
+                    atual.chaves[pos] = atual.chaves[pos-1];
+                    atual.desc[pos+1] = atual.desc[pos];
                     pos--;
                 }
-                atual.chaves[pos+1] = retorno_chave;
-                atual.desc[pos+2] = retorno_RRN;
+                atual.chaves[pos] = retorno_chave;
+                atual.desc[pos+1] = retorno_RRN;
                 atual.nro_chaves++;
 
                 fseek(stream, (RRN_atual + 1)*tamNo, SEEK_SET);
@@ -180,14 +179,14 @@ void split(cabecalho_arvb *cab, no_arvb *atual, no_arvb *novo, Indice ins_chave,
     desc[ORDEM] = -1;
 
     // inserir a chave e descendente na posicao adequada dos vetores
-    int i = ORDEM - 2;
-    while (i >= 0 && ins_chave.id < chaves[i].id){
-        chaves[i+1] = chaves[i];
-        desc[i+2] = desc[i+1];
-        i--;
+    int pos = ORDEM - 1;
+    while (pos > 0 && ins_chave.id < chaves[pos-1].id){
+        chaves[pos] = chaves[pos-1];
+        desc[pos+1] = desc[pos];
+        pos--;
     }
-    chaves[i+1] = ins_chave;
-    desc[i+2] = ins_RRN;
+    chaves[pos] = ins_chave;
+    desc[pos+1] = ins_RRN;
 
     // indicar a chave e descendente que vao ser promovidos
     *promo_chave = chaves[ORDEM/2];
