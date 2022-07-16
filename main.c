@@ -788,15 +788,17 @@ int main(void){
         break;
 
         /* Funcionalidade 10:
-        recuperacao de registros que satisfazem criterios de busca, usando indice arvore-B */
+        recuperacao de registros que satisfazem criterios de busca de um id, usando indice arvore-B */
         case 10:{
-            // leitura do comando e abertura dos arquivos
             int id;
+            // leitura do comando e abertura dos arquivos
             scanf("%ms %ms %ms id %d", &tipo, &binname, &indname, &id);
             FILE *bin = fopen(binname, "rb");
             FILE *ind = fopen(indname, "rb");
             cabecalho rc;
             cabecalho_arvb rc_ind;
+            
+            // verificacao da existencia dos arquivos e seus status
             if(
                 (bin == NULL)
                 ||
@@ -812,6 +814,8 @@ int main(void){
                 break;
             }
 
+            // se o rrn do no raiz no cabecalho do arquivo de indice for -1 significa que nao existe nenhum registro no
+            // arquivo de dados e portanto nem o registro procurado
             if(rc_ind.noRaiz == -1){
                 printf("Registro inexistente.\n");
                 fclose(bin);
@@ -820,15 +824,23 @@ int main(void){
             }
 
             char tamNo = tipo[4] == '1' ? TAM_ARVB1 : TAM_ARVB2;
+            // move o ponteiro do arquivo de indice ate a posicao do no raiz
             fseek(ind, (rc_ind.noRaiz + 1) * tamNo, SEEK_SET);
             no_arvb raiz = ler_no_arvb(ind, tipo[4]);
-            long offset = tipo[4] == '1' ? (buscar_arvb1(ind, raiz, id) * TAM_TIPO1) + TAM_CAB1 : buscar_arvb2(ind, raiz, id);
+            // calcula o offset do registro buscado no arquivo de dados
+            long offset = (
+                tipo[4] == '1'
+                ? (buscar_arvb1(ind, raiz, id) * TAM_TIPO1) + TAM_CAB1
+                : buscar_arvb2(ind, raiz, id)
+            );
+            // se o resultado for menor que o offset do primeiro registro significa que o registro nao foi encontrado
             if(offset < TAM_CAB1){
                 printf("Registro inexistente.\n");
                 fclose(bin);
                 fclose(ind);
                 break;
             }
+            // move o ponteiro do arquivo de dados ate a posicao do registro encontrado
             fseek(bin, offset, SEEK_SET);
             char removido = fgetc(bin);
             if(removido == '1'){
@@ -840,13 +852,16 @@ int main(void){
             veiculo v;
             switch(tipo[4]){
                 case '1': {
+                    // pula o campo do rrn do proximo registro removido
                     fseek(bin, sizeof(int), SEEK_CUR);
                     v = ler_veiculo(bin, TAM_TIPO1 - (sizeof(char) + sizeof(int)));
                 }
                 break;
                 case '2': {
                     int tamReg;
+                    // le o tamanho do registro encontrado
                     fread(&tamReg, sizeof(int), 1, bin);
+                    // pula o campo do offset do proximo registro removido
                     fseek(bin, sizeof(long), SEEK_CUR);
                     v = ler_veiculo(bin, tamReg - sizeof(long));
                 }

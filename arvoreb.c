@@ -65,18 +65,20 @@ void escrever_no_arvb(FILE *stream, no_arvb no, char tipo){
 
 int buscar_arvb1(FILE *stream, no_arvb atual, int id){
     int i = 0;
+    // procura a posição que o `id` ficaria no nó `atual`
     while (i < atual.nro_chaves && id > atual.chaves[i].id)
         i++;
-    // encontrou o id procurado
+    // se encontrou o id procurado
     if (i < atual.nro_chaves && id == atual.chaves[i].id){
         return atual.chaves[i].RRN;
     }
-    // nao encontrou o id e nao tem mais descendentes
+    // se nao encontrou o id e nao tem mais descendentes para procurar
     else if (atual.tipo == '2'){
         return -1;
     }
-    // procurar id no descendente
+    // se nao encontrou o id mas o no tem descendentes para procurar
     else{
+        // move o ponteiro do arquivo de indice ate a posicao do no descendente que conteria o `id`
         fseek(stream, ((atual.desc[i]+1) * TAM_ARVB1), SEEK_SET);
         no_arvb desc = ler_no_arvb(stream, '1');
         return buscar_arvb1(stream, desc, id);
@@ -85,18 +87,20 @@ int buscar_arvb1(FILE *stream, no_arvb atual, int id){
 
 long buscar_arvb2(FILE *stream, no_arvb atual, int id){
     int i = 0;
+    // procura a posição que o `id` ficaria no nó `atual`
     while (i < atual.nro_chaves && id > atual.chaves[i].id)
         i++;
-    // encontrou o id procurado
+    // se encontrou o id procurado
     if (i < atual.nro_chaves && id == atual.chaves[i].id){
         return atual.chaves[i].byteOffset;
     }
-    // nao encontrou o id e nao tem mais descendentes
+    // se nao encontrou o id e nao tem mais descendentes para procurar
     else if (atual.tipo == '2'){
         return -1;
     }
-    // procurar id no descendente
+    // se nao encontrou o id mas o no tem descendentes para procurar
     else{
+        // move o ponteiro do arquivo de indice ate a posicao do no descendente que conteria o `id`
         fseek(stream, ((atual.desc[i]+1) * TAM_ARVB2), SEEK_SET);
         no_arvb desc = ler_no_arvb(stream, '2');
         return buscar_arvb2(stream, desc, id);
