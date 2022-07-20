@@ -17,8 +17,8 @@ o numero de chaves, suas chaves e seus descendentes */
 typedef struct no_arvb{
     char tipo;
     int nro_chaves;
-    Indice chaves[ORDEM];
-    int desc[ORDEM + 1]; 
+    Indice chaves[ORDEM-1];
+    int desc[ORDEM]; 
 } no_arvb;
 
 /* le os dados de um cabecalho de arquivo de arvore b; retorna cabecalho lido
